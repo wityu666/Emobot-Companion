@@ -87,7 +87,7 @@ class CloudVoice {
   }
   String respond(const String& question) {
     JsonDocument request;
-    request["model"]=EMOBOT_CHAT_MODEL; request["temperature"]=0.5; request["max_tokens"]=1200;
+    request["model"]=EMOBOT_CHAT_MODEL; request["temperature"]=0.5; request["max_tokens"]=400;
     JsonArray messages=request["messages"].to<JsonArray>();
     JsonObject system=messages.add<JsonObject>(); system["role"]="system";
     String instruction=String("You are Emobot, a warm desk robot. Reply in ")+language+". Be honest and supportive. No diagnosis or invented memories. Return JSON only: {\"reply\":\"brief response\",\"actions\":[{\"action\":\"eye_happy\",\"duration\":700}]}. At most 12 actions, 50-5000ms each, total <=20000ms. Persona: "+persona+". Allowed: delay";
@@ -105,7 +105,7 @@ class CloudVoice {
     String content=envelope["choices"][0]["message"]["content"].as<String>();
     if (deserializeJson(answer,content) || !answer["reply"].is<const char*>() || !answer["actions"].is<JsonArray>()) return "";
     String reply=answer["reply"].as<String>();
-    if (!reply.length() || reply.length()>4000) return "";
+    if (!reply.length() || reply.length()>1200) return "";
     uint32_t total=0;
     if (answer["actions"].size()>12) return "";
     for (JsonVariant action : answer["actions"].as<JsonArray>()) {
@@ -171,7 +171,7 @@ class CloudVoice {
     JsonDocument result; result["voice"]=spoken?"ok":"failed";
     String message; serializeJson(result,message); emit(message);
     for (const char* file : {"/voice.wav","/asr.json","/chat.json"}) FFat.remove(file);
-    phase=0; worker=nullptr;
+    worker=nullptr; phase=0;
     vTaskDelete(nullptr);
   }
 public:
@@ -181,7 +181,7 @@ public:
     emit=callback; mounted=FFat.begin(false);
     if (mounted) {
       File saved=FFat.open("/history.json",FILE_READ);
-      if (!saved || deserializeJson(history,saved) || !history.is<JsonArray>()) history.to<JsonArray>();
+      if (!saved || saved.size()>32768 || deserializeJson(history,saved) || !history.is<JsonArray>()) history.to<JsonArray>();
       saved.close();
       while (history.size()>20) history.as<JsonArray>().remove(0);
     }
@@ -195,8 +195,10 @@ public:
     audioReady=i2s_driver_install(I2S_NUM_0,&input,0,nullptr)==ESP_OK && i2s_set_pin(I2S_NUM_0,&inPins)==ESP_OK && i2s_driver_install(I2S_NUM_1,&output,0,nullptr)==ESP_OK && i2s_set_pin(I2S_NUM_1,&outPins)==ESP_OK;
   }
   bool trigger() {
-    if (worker || !ready()) return false;
-    return xTaskCreatePinnedToCore(task,"emobot-voice",12288,this,1,&worker,0)==pdPASS;
+    if (phase || !ready()) return false;
+    phase=1;
+    if (xTaskCreatePinnedToCore(task,"emobot-voice",12288,this,1,&worker,0)!=pdPASS) { phase=0; return false; }
+    return true;
   }
 };
 }

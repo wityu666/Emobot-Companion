@@ -246,21 +246,16 @@ class Archive:
                 raise KeyError("Memory does not exist for this user")
 
     def forget(self, identity: str | None = None) -> None:
-        """Hard-delete memory and its source turn; all means all personal history as well."""
+        """Clear chat history on forgetting, preventing later turns from restoring a deleted fact."""
         with self.engine.begin() as connection:
             condition = self.memories.c.user_id == self.user
             if identity:
                 condition &= self.memories.c.id == identity
                 row = connection.execute(select(self.memories.c.source_id).where(condition)).first()
-                if row and row[0]:
-                    connection.execute(
-                        delete(self.messages).where(
-                            self.messages.c.turn_id == row[0], self.messages.c.user_id == self.user
-                        )
-                    )
-            else:
-                for table in (self.messages, self.sessions, self.actions, self.skills):
-                    connection.execute(delete(table).where(table.c.user_id == self.user))
+                if not row:
+                    return
+            for table in (self.messages, self.sessions, self.actions, self.skills):
+                connection.execute(delete(table).where(table.c.user_id == self.user))
             connection.execute(delete(self.memories).where(condition))
 
     def import_markdown(self, paths: list[Path]) -> int:

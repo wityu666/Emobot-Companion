@@ -3,12 +3,13 @@
 from __future__ import annotations
 
 import json
+import math
 import re
 import threading
 from dataclasses import dataclass
 from importlib.resources import files
 
-from .archive import Archive
+from .archive import Archive, terms
 from .protocol import ACTIONS, Action, parse_actions
 from .providers import ProviderError
 from .settings import Settings
@@ -60,7 +61,24 @@ def acceptable_memory(candidate: object, question: str) -> bool:
         return False
     blocked = r"password|token|api.?key|secret|\b\d{7,}\b|@|密码|密钥|身份证|银行卡|疾病|诊断|抑郁|焦虑|药物|phone|address|地址|电话"
     durable = r"喜欢|不喜欢|爱好|偏好|习惯|请记住|记住我|我叫|like|prefer|enjoy|remember|my name"
-    return not re.search(blocked, question + " " + content, re.I) and bool(re.search(durable, question, re.I))
+
+    def facts(value: str) -> set[str]:
+        value = re.sub(
+            r"\b(user|you|i|the|a|an|likes?|prefers?|enjoys?|remember|please|my|name|is)\b",
+            " ",
+            value,
+            flags=re.I,
+        )
+        value = re.sub(r"用户|喜欢|偏好|请记住|记住|我叫|我|你", "", value)
+        return terms(value)
+
+    claimed, stated = facts(content), facts(question)
+    grounded = bool(claimed) and claimed.issubset(stated)
+    return (
+        grounded
+        and not re.search(blocked, question + " " + content, re.I)
+        and bool(re.search(durable, question, re.I))
+    )
 
 
 class Companion:
@@ -103,6 +121,11 @@ class Companion:
             if config.embedding_model:
                 try:
                     vector = self.cloud.embed(question)
+                    if len(vector) != config.embedding_dimensions or any(
+                        not math.isfinite(v) for v in vector
+                    ):
+                        vector = None
+                        raise ValueError("Invalid query embedding")
                 except (ProviderError, ValueError):
                     warnings.append("Embeddings unavailable; using keyword retrieval")
             references = self.archive.search(question, vector, include_memories=config.memory_enabled)

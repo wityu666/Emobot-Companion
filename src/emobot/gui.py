@@ -129,9 +129,7 @@ class Desktop:
                 try:
                     Speech(self.companion.cloud).speak(reply.text)
                 except Exception as error:
-                    self.results.put(
-                        (True, f"Voice: {type(error).__name__}", lambda value: self.status.set(value))
-                    )
+                    reply = replace(reply, warnings=reply.warnings + (f"Voice: {type(error).__name__}",))
             return reply
 
         self.submit(chat, self.show_reply)
@@ -192,7 +190,7 @@ class Desktop:
         ttk.Button(
             page,
             text="Connect USB / 连接串口",
-            command=lambda: self.submit(lambda: self.robot.connect_usb(self.port.get())),
+            command=self.connect_usb,
         ).pack(anchor="w", pady=5)
         self.ble_address = tk.StringVar()
         self.ble_choices = ttk.Combobox(page, textvariable=self.ble_address, width=70)
@@ -208,7 +206,7 @@ class Desktop:
         ttk.Button(
             page,
             text="Connect BLE / 连接蓝牙",
-            command=lambda: self.submit(lambda: self.robot.connect_ble(self.ble_address.get())),
+            command=self.connect_ble,
         ).pack(anchor="w", pady=5)
         ttk.Button(page, text="Disconnect / 断开", command=lambda: self.submit(self.robot.disconnect)).pack(
             anchor="w", pady=5
@@ -227,6 +225,14 @@ class Desktop:
     def factory(self) -> None:
         command = self.factory_text.get()
         self.submit(lambda: self.robot.factory(command))
+
+    def connect_usb(self) -> None:
+        port = self.port.get()
+        self.submit(lambda: self.robot.connect_usb(port))
+
+    def connect_ble(self) -> None:
+        address = self.ble_address.get()
+        self.submit(lambda: self.robot.connect_ble(address))
 
     def _settings_page(self) -> None:
         page = self.pages["Settings / API 设置"]
@@ -270,6 +276,9 @@ class Desktop:
         )
 
     def save_settings(self) -> None:
+        if self.busy:
+            self.status.set("Wait for the current operation before changing settings")
+            return
         try:
             values = {name: variable.get() for name, variable in self.config_vars.items()}
             values["embedding_dimensions"] = int(values["embedding_dimensions"])
@@ -322,6 +331,9 @@ class Desktop:
         self.refresh_memory()
 
     def save_persona(self) -> None:
+        if self.busy:
+            self.status.set("Wait for the current operation before editing persona")
+            return
         value = self.persona.get("1.0", "end").strip()
         if len(value) > 6000:
             self.status.set("Persona exceeds 6000 characters")

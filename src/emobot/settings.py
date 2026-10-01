@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import os
+import tempfile
 from dataclasses import asdict, dataclass, fields
 from pathlib import Path
 from urllib.parse import urlparse
@@ -43,6 +44,17 @@ class Settings:
     persona: str = "Be warm, concise, playful, and curious. 尊重用户，先倾听，再提供具体帮助。"
 
     def validate(self) -> Settings:
+        for field in fields(self):
+            value = getattr(self, field.name)
+            if type(value) is not type(field.default):
+                raise ValueError(f"Wrong configuration type for {field.name}")
+            if isinstance(value, str) and (len(value) > 6000 or "\x00" in value):
+                raise ValueError(f"Configuration value too long or invalid: {field.name}")
+        if any(
+            "\n" in getattr(self, name) or "\r" in getattr(self, name)
+            for name in ("api_key", "embedding_key", "volcano_token")
+        ):
+            raise ValueError("Credentials must not contain newlines")
         if self.language not in {"zh", "en"} or self.theme not in {"system", "light", "dark"}:
             raise ValueError("Unsupported language or theme")
         if self.speech_provider not in {"openai", "volcano"}:
@@ -88,9 +100,16 @@ class Settings:
         self.validate()
         target = path or state_directory() / "settings.json"
         target.parent.mkdir(parents=True, exist_ok=True, mode=0o700)
-        temporary = target.with_suffix(".tmp")
-        descriptor = os.open(temporary, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
-        with os.fdopen(descriptor, "w") as stream:
-            json.dump(asdict(self), stream, ensure_ascii=False, indent=2)
-        os.chmod(temporary, 0o600)
-        os.replace(temporary, target)
+        temporary = None
+        try:
+            with tempfile.NamedTemporaryFile(
+                mode="w", dir=target.parent, prefix=".emobot-", delete=False
+            ) as stream:
+                temporary = Path(stream.name)
+                json.dump(asdict(self), stream, ensure_ascii=False, indent=2)
+                stream.flush()
+                os.fsync(stream.fileno())
+            os.replace(temporary, target)
+        finally:
+            if temporary and temporary.exists():
+                temporary.unlink()
