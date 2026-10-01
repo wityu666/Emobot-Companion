@@ -17,9 +17,10 @@ class RobotLink:
     def __init__(self):
         self._serial = None
         self._ble = None
-        self._loop = asyncio.new_event_loop()
-        self._thread = threading.Thread(target=self._loop.run_forever, daemon=True)
-        self._thread.start()
+        self._loop = None
+        self._thread = None
+        self._closed = False
+        self._generation = 0
         self._lock = threading.RLock()
         self._decoder = LineDecoder()
         self._reader = None
@@ -30,19 +31,55 @@ class RobotLink:
     def connected(self) -> bool:
         return bool((self._serial and self._serial.is_open) or (self._ble and self._ble.is_connected))
 
-    def _event(self, chunk: bytes) -> None:
-        for message in self._decoder.feed(chunk):
-            while True:
+    def _publish(self, message: dict) -> None:
+        while True:
+            try:
+                self.events.put_nowait(message)
+                return
+            except queue.Full:
                 try:
-                    self.events.put_nowait(message)
-                    break
-                except queue.Full:
-                    try:
-                        self.events.get_nowait()
-                    except queue.Empty:
-                        pass  # The GUI may have drained the full queue before this eviction.
+                    self.events.get_nowait()
+                except queue.Empty:
+                    pass  # The GUI may have drained the queue before this eviction.
+
+    def _event(self, chunk: bytes, generation: int | None = None) -> None:
+        if generation is not None and generation != self._generation:
+            return
+        for message in self._decoder.feed(chunk):
+            self._publish(message)
+
+    def _require_open(self) -> None:
+        if self._closed:
+            raise RuntimeError("Robot link is closed")
+
+    def _ensure_loop(self) -> None:
+        self._require_open()
+        if self._loop is not None:
+            return
+        loop = self._loop = asyncio.new_event_loop()
+
+        def run():
+            asyncio.set_event_loop(loop)
+            try:
+                loop.run_forever()
+            finally:
+                pending = asyncio.all_tasks(loop)
+                for task in pending:
+                    task.cancel()
+                if pending:
+                    loop.run_until_complete(asyncio.gather(*pending, return_exceptions=True))
+                loop.run_until_complete(loop.shutdown_asyncgens())
+                loop.close()
+
+        self._thread = threading.Thread(target=run, daemon=True, name="emobot-ble-worker")
+        self._thread.start()
 
     def _await(self, coroutine, timeout: int = 15):
+        try:
+            self._ensure_loop()
+        except Exception:
+            coroutine.close()
+            raise
         future = asyncio.run_coroutine_threadsafe(coroutine, self._loop)
         try:
             return future.result(timeout)
@@ -67,26 +104,45 @@ class RobotLink:
                 if "Emobot" in (item.name or "") or "Desk-Emoji" in (item.name or "")
             ]
 
-        return self._await(discover())
+        with self._lock:
+            return self._await(discover())
+
+    def _reset_events(self) -> None:
+        self._decoder = LineDecoder()
+        while True:
+            try:
+                self.events.get_nowait()
+            except queue.Empty:
+                return
 
     def connect_usb(self, port: str) -> None:
         import serial
 
         with self._lock:
+            self._require_open()
             self.disconnect()
             self._serial = serial.Serial(port, 115200, timeout=0.05, write_timeout=3)
-            self._decoder = LineDecoder()
+            self._reset_events()
             self._stop_reader.clear()
             port_handle = self._serial
+            generation = self._generation
 
             def read():
-                while not self._stop_reader.is_set():
-                    try:
+                failed = False
+                try:
+                    while not self._stop_reader.is_set():
                         chunk = port_handle.read(max(1, min(port_handle.in_waiting, 8192)))
                         if chunk:
-                            self._event(chunk)
+                            self._event(chunk, generation)
+                except OSError:
+                    failed = not self._stop_reader.is_set()
+                finally:
+                    try:
+                        port_handle.close()
                     except OSError:
-                        break
+                        pass
+                    if failed and generation == self._generation:
+                        self._publish({"connected": False, "transport": "usb", "error": "Serial read failed"})
 
             self._reader = threading.Thread(target=read, daemon=True, name="emobot-usb-reader")
             self._reader.start()
@@ -98,15 +154,19 @@ class RobotLink:
             client = BleakClient(address, timeout=10)
             try:
                 await client.connect()
-                await client.start_notify(BLE_CHARACTERISTIC, lambda _sender, data: self._event(bytes(data)))
+                await client.start_notify(
+                    BLE_CHARACTERISTIC, lambda _sender, data: self._event(bytes(data), generation)
+                )
             except (Exception, asyncio.CancelledError):
                 await client.disconnect()
                 raise
             return client
 
         with self._lock:
+            self._require_open()
             self.disconnect()
-            self._decoder = LineDecoder()
+            self._reset_events()
+            generation = self._generation
             self._ble = self._await(connect())
 
     def _send(self, payload: bytes) -> None:
@@ -134,22 +194,28 @@ class RobotLink:
 
     def disconnect(self) -> None:
         with self._lock:
+            self._generation += 1
             if self._serial:
+                port, self._serial = self._serial, None
                 self._stop_reader.set()
+                port.close()
                 if self._reader:
                     self._reader.join(timeout=1)
                     self._reader = None
-                self._serial.close()
-                self._serial = None
             if self._ble:
                 client, self._ble = self._ble, None
                 self._await(client.disconnect(), timeout=5)
 
     def close(self) -> None:
-        try:
-            self.disconnect()
-        finally:
-            self._loop.call_soon_threadsafe(self._loop.stop)
-            self._thread.join(timeout=6)
-            if not self._thread.is_alive():
-                self._loop.close()
+        with self._lock:
+            if self._closed:
+                return
+            try:
+                self.disconnect()
+            finally:
+                self._closed = True
+                if self._loop is not None:
+                    self._loop.call_soon_threadsafe(self._loop.stop)
+                    self._thread.join(timeout=6)
+                    if self._thread.is_alive():
+                        raise RuntimeError("Bluetooth worker did not stop")

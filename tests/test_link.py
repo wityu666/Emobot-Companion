@@ -52,7 +52,7 @@ def test_usb_background_receive_disconnect_and_shutdown(monkeypatch):
         assert link._reader is None
     finally:
         link.close()
-    assert not link._thread.is_alive()
+    assert link._thread is None  # USB needs only its reader; no Bluetooth loop is started.
 
 
 def test_ble_chunking_and_notification(monkeypatch):

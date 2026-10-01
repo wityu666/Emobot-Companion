@@ -81,21 +81,27 @@ class Desktop:
         if self.closing:
             return
         try:
-            while True:
+            for _ in range(32):
                 success, result, callback, completed = self.results.get_nowait()
                 if completed:
                     self.busy = False
                     self.status.set("Ready / 就绪" if success else str(result))
                 if success and callback:
-                    callback(result)
+                    try:
+                        callback(result)
+                    except Exception as error:
+                        self.status.set(f"UI callback failed: {type(error).__name__}")
+                        logging.getLogger(__name__).warning("UI callback failed: %s", type(error).__name__)
         except queue.Empty:
             pass
+        latest_event = None
         try:
-            while True:
-                event = self.robot.events.get_nowait()
-                self.status.set(str(event))
+            for _ in range(32):
+                latest_event = self.robot.events.get_nowait()
         except queue.Empty:
             pass
+        if latest_event is not None:
+            self.status.set(str(latest_event))
         self._poll_handle = self.window.after(50, self._drain)
 
     def _chat_page(self) -> None:
