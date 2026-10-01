@@ -1,4 +1,5 @@
 """Explicit, private configuration; no import-time network or device activity."""
+
 from __future__ import annotations
 
 import json
@@ -51,9 +52,17 @@ class Settings:
         for value in (self.api_url, self.embedding_url):
             if value:
                 parsed = urlparse(value)
-                if parsed.scheme != "https" and not (parsed.scheme == "http" and parsed.hostname in {"localhost", "127.0.0.1", "::1"}):
+                if parsed.scheme != "https" and not (
+                    parsed.scheme == "http" and parsed.hostname in {"localhost", "127.0.0.1", "::1"}
+                ):
                     raise ValueError("API endpoints require HTTPS (localhost may use HTTP)")
-                if not parsed.hostname or parsed.username or parsed.password or parsed.query or parsed.fragment:
+                if (
+                    not parsed.hostname
+                    or parsed.username
+                    or parsed.password
+                    or parsed.query
+                    or parsed.fragment
+                ):
                     raise ValueError("Use an API base URL without credentials, query, or fragment")
         return self
 

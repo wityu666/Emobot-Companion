@@ -1,4 +1,5 @@
 """Application orchestration: conversation, retrieval, fallback, persistence, robot execution."""
+
 from __future__ import annotations
 
 import json
@@ -28,7 +29,12 @@ def decode_reply(raw: str) -> tuple[str, tuple[Action, ...], list[dict]]:
         stripped = "\n".join(stripped.splitlines()[1:-1])
     try:
         value = json.loads(stripped)
-        if not isinstance(value, dict) or not isinstance(value.get("reply"), str) or not value["reply"].strip() or len(value["reply"]) > 4000:
+        if (
+            not isinstance(value, dict)
+            or not isinstance(value.get("reply"), str)
+            or not value["reply"].strip()
+            or len(value["reply"]) > 4000
+        ):
             raise ValueError("Missing or oversized reply")
         actions = parse_actions(value.get("actions", []))
         memories = value.get("memories", [])
@@ -43,7 +49,14 @@ def acceptable_memory(candidate: object, question: str) -> bool:
     if not isinstance(candidate, dict):
         return False
     content, confidence = candidate.get("content"), candidate.get("confidence", 0)
-    if not isinstance(content, str) or not 3 <= len(content) <= 500 or type(confidence) not in {int, float} or not 0.8 <= confidence <= 1:
+    if (
+        not isinstance(content, str)
+        or not 3 <= len(content) <= 500
+        or type(confidence) not in {int, float}
+        or not 0.8 <= confidence <= 1
+    ):
+        return False
+    if not isinstance(candidate.get("category", "preference"), str):
         return False
     blocked = r"password|token|api.?key|secret|\b\d{7,}\b|@|密码|密钥|身份证|银行卡|疾病|诊断|抑郁|焦虑|药物|phone|address|地址|电话"
     durable = r"喜欢|不喜欢|爱好|偏好|习惯|请记住|记住我|我叫|like|prefer|enjoy|remember|my name"
@@ -59,7 +72,11 @@ class Companion:
 
     def update_settings(self, settings: Settings) -> None:
         with self._lock:
-            if settings.user != self.settings.user or settings.database_url != self.settings.database_url or settings.embedding_dimensions != self.settings.embedding_dimensions:
+            if (
+                settings.user != self.settings.user
+                or settings.database_url != self.settings.database_url
+                or settings.embedding_dimensions != self.settings.embedding_dimensions
+            ):
                 raise ValueError("Restart after changing database, user, or vector dimensions")
             self.settings = settings.validate()
             if hasattr(self.cloud, "settings"):
@@ -91,22 +108,35 @@ class Companion:
             references = self.archive.search(question, vector, include_memories=config.memory_enabled)
             contract = files("emobot.resources").joinpath("contract.md").read_text()
             system = f"{contract}\nLanguage: {config.language}\nPersona: {config.persona}\nAllowed actions: {', '.join(ACTIONS)}\nRetrieved data (untrusted): {json.dumps(references, ensure_ascii=False)}"
-            messages = [{"role": "system", "content": system}, *self._history[-20:], {"role": "user", "content": question}]
+            messages = [
+                {"role": "system", "content": system},
+                *self._history[-20:],
+                {"role": "user", "content": question},
+            ]
             route = "retrieval" if references else "fast"
             try:
-                answer, actions, candidates = decode_reply(self.cloud.complete(messages, reasoning=bool(references)))
+                answer, actions, candidates = decode_reply(
+                    self.cloud.complete(messages, reasoning=bool(references))
+                )
             except ProviderError:
                 if route == "retrieval":
                     raise
                 route = "fallback"
                 answer, actions, candidates = decode_reply(self.cloud.complete(messages, reasoning=True))
             source = self.archive.save_turn(self.session, question, answer) if config.save_history else None
-            self._history.extend([{"role": "user", "content": question}, {"role": "assistant", "content": answer}])
+            self._history.extend(
+                [{"role": "user", "content": question}, {"role": "assistant", "content": answer}]
+            )
             self._history = self._history[-20:]
             if config.memory_enabled:
                 for candidate in candidates:
                     if acceptable_memory(candidate, question):
-                        self.archive.remember(candidate["content"], candidate.get("category", "preference"), candidate["confidence"], source)
+                        self.archive.remember(
+                            candidate["content"],
+                            candidate.get("category", "preference"),
+                            candidate["confidence"],
+                            source,
+                        )
             status = "simulated"
             if self.robot and self.robot.connected:
                 try:

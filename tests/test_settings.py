@@ -17,7 +17,16 @@ def test_secret_config_permissions_and_environment(settings, tmp_path, monkeypat
     assert not target.with_suffix(".tmp").exists()
 
 
-@pytest.mark.parametrize("url", ["http://remote.example", "file:///tmp/x", "https://key:secret@example.com", "https://example.com?key=secret", "https://example.com#fragment"])
+@pytest.mark.parametrize(
+    "url",
+    [
+        "http://remote.example",
+        "file:///tmp/x",
+        "https://key:secret@example.com",
+        "https://example.com?key=secret",
+        "https://example.com#fragment",
+    ],
+)
 def test_unsafe_api_urls_rejected(settings, url):
     with pytest.raises(ValueError):
         replace(settings, api_url=url).validate()

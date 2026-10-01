@@ -1,12 +1,17 @@
 """Robot commands are a small, bounded language, never arbitrary model-generated code."""
+
 from __future__ import annotations
 
 import json
 from dataclasses import dataclass
 
-ANIMATIONS = tuple("heart calendar face_id cola laugh dumbbell skateboard battery basketball rugby alarm screen wifi youtube tv movie cat write phone sunny cloudy rainy windy snow beer walk shit cry puzzled football volleyball badminton rice gym boat thinking money wait plane rocket ok love".split())
+ANIMATIONS = tuple(
+    "heart calendar face_id cola laugh dumbbell skateboard battery basketball rugby alarm screen wifi youtube tv movie cat write phone sunny cloudy rainy windy snow beer walk shit cry puzzled football volleyball badminton rice gym boat thinking money wait plane rocket ok love".split()
+)
 EYES = tuple("eye_blink eye_happy eye_sad eye_anger eye_surprise eye_left eye_right".split())
-HEADS = tuple("head_left head_right head_up head_down head_nod head_shake head_roll_left head_roll_right head_center".split())
+HEADS = tuple(
+    "head_left head_right head_up head_down head_nod head_shake head_roll_left head_roll_right head_center".split()
+)
 ACTIONS = EYES + HEADS + ANIMATIONS + ("delay",)
 MAX_WIRE_BYTES = 8192
 
@@ -68,6 +73,7 @@ def validate_factory(command: str) -> None:
 
 class LineDecoder:
     """Fragment-safe stream decoder, resynchronizing after an oversized line."""
+
     def __init__(self, limit: int = MAX_WIRE_BYTES):
         self.buffer = bytearray()
         self.limit = limit

@@ -8,13 +8,13 @@ from emobot.archive import Archive, cosine
 
 class Embedder:
     def embed(self, _text):
-        return [1., 0., 0.]
+        return [1.0, 0.0, 0.0]
 
 
 def test_embedding_invalidation_and_scoped_edit(settings, archive):
     identity = archive.remember("I like cats")
     assert archive.index(Embedder()) == 1
-    assert archive.list_memories()[0]["vector"] == [1., 0., 0.]
+    assert archive.list_memories()[0]["vector"] == [1.0, 0.0, 0.0]
     archive.edit_memory(identity, "I prefer dogs")
     assert archive.list_memories()[0]["vector"] is None
     with pytest.raises(KeyError):
@@ -75,7 +75,8 @@ def test_forget_all_removes_personal_data_but_preserves_docs(archive, tmp_path):
 def test_wrong_dimensions_or_nonfinite_not_indexed(archive):
     class Wrong:
         def embed(self, _text):
-            return [float("nan")]*3
+            return [float("nan")] * 3
+
     archive.remember("I like cats")
     with pytest.raises(ValueError):
         archive.index(Wrong())

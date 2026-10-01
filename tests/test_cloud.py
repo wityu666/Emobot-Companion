@@ -16,9 +16,11 @@ def cloud_with(settings, handler):
 
 def test_chat_http_payload(settings):
     seen = []
+
     def handler(request):
         seen.append(request)
         return httpx.Response(200, json={"choices": [{"message": {"content": "valid"}}]})
+
     provider = cloud_with(settings, handler)
     try:
         assert provider.complete([{"role": "user", "content": "hello"}]) == "valid"
@@ -32,11 +34,13 @@ def test_chat_http_payload(settings):
 
 def test_multipart_transcription_and_binary_synthesis(settings, tmp_path):
     requests = []
+
     def handler(request):
         requests.append(request)
         if request.url.path.endswith("transcriptions"):
             return httpx.Response(200, json={"text": "hello"})
         return httpx.Response(200, content=b"mp3data")
+
     provider = cloud_with(settings, handler)
     audio = tmp_path / "input.wav"
     audio.write_bytes(b"RIFFfake")

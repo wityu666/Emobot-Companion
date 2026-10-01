@@ -27,8 +27,30 @@ def main(argv: list[str] | None = None) -> int:
     try:
         config = Settings.load(args.config)
         if args.command == "doctor":
-            result = {name: importlib.util.find_spec(name) is not None for name in ("tkinter", "serial", "bleak", "speech_recognition", "pyaudio", "pygame", "psycopg", "pgvector", "esptool")}
-            print(json.dumps({"dependencies": result, "api_key_configured": bool(config.api_key), "language": config.language}, indent=2))
+            result = {
+                name: importlib.util.find_spec(name) is not None
+                for name in (
+                    "tkinter",
+                    "serial",
+                    "bleak",
+                    "speech_recognition",
+                    "pyaudio",
+                    "pygame",
+                    "psycopg",
+                    "pgvector",
+                    "esptool",
+                )
+            }
+            print(
+                json.dumps(
+                    {
+                        "dependencies": result,
+                        "api_key_configured": bool(config.api_key),
+                        "language": config.language,
+                    },
+                    indent=2,
+                )
+            )
             return 0
         archive = Archive(config)
         cloud = DemoCloud() if args.demo else Cloud(config)
@@ -43,11 +65,24 @@ def main(argv: list[str] | None = None) -> int:
                 if args.command == "gui":
                     from .gui import Desktop
                     from .link import RobotLink
+
                     robot = RobotLink()
                     Desktop(Companion(config, archive, cloud, robot), robot, args.demo).run()
                 else:
                     reply = Companion(config, archive, cloud).ask(args.question)
-                    print(json.dumps({"reply": reply.text, "route": reply.route, "actions": [a.as_dict() for a in reply.actions], "references": list(reply.references), "warnings": list(reply.warnings)}, ensure_ascii=False, indent=2))
+                    print(
+                        json.dumps(
+                            {
+                                "reply": reply.text,
+                                "route": reply.route,
+                                "actions": [a.as_dict() for a in reply.actions],
+                                "references": list(reply.references),
+                                "warnings": list(reply.warnings),
+                            },
+                            ensure_ascii=False,
+                            indent=2,
+                        )
+                    )
         finally:
             cloud.close()
             archive.close()

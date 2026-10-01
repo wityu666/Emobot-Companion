@@ -31,11 +31,26 @@ def test_context_and_automatic_fallback(settings, archive):
     companion.ask("second question")
     assert cloud.calls[0][1] is False
     assert cloud.calls[1][1] is True
-    assert cloud.calls[2][0][1:3] == [{"role": "user", "content": "first question"}, {"role": "assistant", "content": "one"}]
+    assert cloud.calls[2][0][1:3] == [
+        {"role": "user", "content": "first question"},
+        {"role": "assistant", "content": "one"},
+    ]
     assert len(archive.history(companion.session)) == 4
 
 
-@pytest.mark.parametrize("raw", ["", "null", "[]", "{}", '{"reply":null}', '{"reply":"","actions":[]}', '{"reply":"x","actions":[null]}', '{"reply":"x","actions":[{"action":"exec","duration":50}]}'])
+@pytest.mark.parametrize(
+    "raw",
+    [
+        "",
+        "null",
+        "[]",
+        "{}",
+        '{"reply":null}',
+        '{"reply":"","actions":[]}',
+        '{"reply":"x","actions":[null]}',
+        '{"reply":"x","actions":[{"action":"exec","duration":50}]}',
+    ],
+)
 def test_invalid_model_contract_fails(raw):
     with pytest.raises(ProviderError):
         decode_reply(raw)
@@ -48,20 +63,29 @@ def test_malformed_memory_candidates_do_not_crash(settings, archive):
 
 
 def test_only_durable_explicit_preferences_saved(settings, archive):
-    candidate = {"content": "用户喜欢猫", "category": "preference", "confidence": .95}
+    candidate = {"content": "用户喜欢猫", "category": "preference", "confidence": 0.95}
     cloud = ScriptedCloud([envelope(memories=[candidate])])
     companion = Companion(settings, archive, cloud)
     companion.ask("我喜欢猫")
     assert archive.list_memories()[0]["content"] == "用户喜欢猫"
 
 
-@pytest.mark.parametrize("question", ["My password is abc", "我的银行卡是12345678", "我喜欢的药物是x", "I feel sad today", "My phone is 123456789"])
+@pytest.mark.parametrize(
+    "question",
+    [
+        "My password is abc",
+        "我的银行卡是12345678",
+        "我喜欢的药物是x",
+        "I feel sad today",
+        "My phone is 123456789",
+    ],
+)
 def test_sensitive_or_transient_memory_rejected(question):
-    assert not acceptable_memory({"content": question, "confidence": .99}, question)
+    assert not acceptable_memory({"content": question, "confidence": 0.99}, question)
 
 
 def test_privacy_switches(settings, archive):
-    candidate = {"content": "用户喜欢猫", "confidence": .9}
+    candidate = {"content": "用户喜欢猫", "confidence": 0.9}
     cloud = ScriptedCloud([envelope(memories=[candidate])])
     companion = Companion(replace(settings, save_history=False, memory_enabled=False), archive, cloud)
     companion.ask("我喜欢猫")

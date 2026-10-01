@@ -6,6 +6,7 @@
 #include <ESP32Servo.h>
 #include <RevEng_PAJ7620.h>
 #include <Preferences.h>
+#include <WiFi.h>
 #include "Clips.h"
 
 namespace emobot {
@@ -31,6 +32,8 @@ class Hardware {
   int length=0, current=0, cx=90, cy=90;
   uint32_t started=0, drawn=0, idleBlink=0;
   bool screenReady=false, sensorReady=false, enabled=true;
+  uint32_t movingAt=0;
+  int movingX=90, movingY=90, movingMs=0;
   int lastFrame=-1;
   void pose(int x, int y) {
     yaw.write(constrain(x, max(0,cx-25), min(180,cx+25)));
@@ -102,7 +105,7 @@ public:
     }
     int x,y,duration;
     if (sscanf(command.c_str(),"head_move %d %d %d %c",&x,&y,&duration,&trailing)==3 && x>=0 && x<=180 && y>=0 && y<=180 && duration>=50 && duration<=5000) {
-      length=0; pose(x,y); return "ok";
+      length=0; movingAt=millis(); movingMs=duration; movingX=x; movingY=y; return "ok";
     }
     return "unknown command";
   }
@@ -110,6 +113,12 @@ public:
     uint32_t time=millis();
     led.setPixelColor(0,voicePhase==1 ? led.Color(50,30,0) : voicePhase==2 ? led.Color(0,0,50) : voicePhase==3 ? led.Color(0,50,0) : 0); led.show();
     if (!enabled) return;
+    if (movingMs) {
+      float phase=min(1.0f,float(time-movingAt)/movingMs);
+      pose(cx+int((movingX-cx)*phase),cy+int((movingY-cy)*phase));
+      if (phase>=1.0f) movingMs=0;
+      return;
+    }
     if (!length) {
       if (time-idleBlink>4000) { face(0,0); idleBlink=time; }
       else if (time-idleBlink>150 && time-idleBlink<220) face(1,0);
