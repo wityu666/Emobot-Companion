@@ -1,0 +1,14 @@
+.venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+*.egg-info/
+build/
+dist/
+.pio/
+.env
+settings.json
+*.db
+*.db-*
+firmware/EmobotS3/secrets.h

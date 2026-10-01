@@ -1,0 +1,8 @@
+{
+  "source_sha256": "fb3ed45fce60228a283f2c8716b0f8524c592f6a06182cbfce96fbad20bec7cd",
+  "animations": 42,
+  "frames_each": 28,
+  "raw_bytes": 602112,
+  "rle_bytes": 657134,
+  "header_sha256": "469829aa32dadf3c1d67f55789314f8b6c4c9d6264326fee2425d42fb2d7469c"
+}
