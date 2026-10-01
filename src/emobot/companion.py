@@ -165,7 +165,7 @@ class Companion:
                 try:
                     self.robot.send_actions(actions)
                     status = "sent"
-                except (OSError, RuntimeError) as error:
+                except Exception as error:
                     status = "failed"
                     warnings.append(f"Robot delivery failed: {type(error).__name__}")
             self.archive.record_actions(self.session, actions, status)

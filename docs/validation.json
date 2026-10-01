@@ -1,0 +1,61 @@
+{
+  "date": "2026-10-01",
+  "reference_commit": "2c3e4a76bb0c7b64ca0253fd1ede169cdc339de0",
+  "python": "3.12.14",
+  "platform": "macOS ARM64",
+  "versions": {
+    "SQLAlchemy": "2.1.1",
+    "httpx": "0.28.1",
+    "pyserial": "3.5",
+    "bleak": "3.0.2",
+    "pytest": "9.1.1",
+    "ruff": "0.16.9",
+    "build": "1.6.1",
+    "platformio": "6.1.18",
+    "setuptools": "81.0.0",
+    "pgvector": "0.4.1",
+    "psycopg": "3.3.6",
+    "clang-format": "20.1.8"
+  },
+  "test_result": "...............................................................s........ [ 98%]\n.                                                                        [100%]\n72 passed, 1 skipped in 2.93s",
+  "test_skip": "Live PostgreSQL/pgvector server is not present; CI defines an isolated service test.",
+  "firmware": {
+    "environment": "emobot-s3",
+    "build": "success",
+    "static_ram_bytes": 67996,
+    "static_ram_limit_bytes": 327680,
+    "flash_bytes": 2147901,
+    "app_partition_bytes": 3145728,
+    "sha256": "c7be2467be0bb50baa6c815caf329e0a6ddb2f9f6217793e2b641bc0c8b53ce4"
+  },
+  "ffat": {
+    "build": "success",
+    "bytes": 5173248,
+    "sha256": "2c6dbe2e40dfa220657fd7f9be71ea32f559b99853a1cc1c147014380e132c16"
+  },
+  "artwork": {
+    "source_sha256": "fb3ed45fce60228a283f2c8716b0f8524c592f6a06182cbfce96fbad20bec7cd",
+    "animations": 42,
+    "frames_each": 28,
+    "raw_bytes": 602112,
+    "rle_bytes": 657134,
+    "header_sha256": "469829aa32dadf3c1d67f55789314f8b6c4c9d6264326fee2425d42fb2d7469c",
+    "raw_pixels_sha256": "7cefdcbba8edaf12b2f2315cde65f35ba8b9f9922b7c99415738116f9105ffa9",
+    "independent_lossless_frames_verified": 1176
+  },
+  "review_rounds": 3,
+  "reviewer": "same implementation assistant; self-review",
+  "not_verified": [
+    "physical ESP32-S3 board",
+    "real servos/OLED/gesture sensor",
+    "actual microphone and speaker",
+    "live chat/ASR/TTS/embedding accounts",
+    "live PostgreSQL server",
+    "remote GitHub Actions before publication"
+  ],
+  "round_1_before": "...F...............................................                      [100%]\n=================================== FAILURES ===================================\n____________________ test_forget_removes_source_and_answer _____________________\n\narchive = <emobot.archive.Archive object at 0x10c244530>\n\n    def test_forget_removes_source_and_answer(archive):\n        session = archive.start_session()\n        source = archive.save_turn(session, \"I like cats\", \"You like cats; remembered\")\n        memory = archive.remember(\"I like cats\", source=source)\n        archive.forget(memory)\n>       assert archive.history(session) == []\nE       AssertionError: assert [{'role': 'as... remembered'}] == []\nE         \nE         Left contains one more item: {'role': 'assistant', 'content': 'You like cats; remembered'}\nE         Use -v to get more diff\n\noutputs/Emobot-Companion/tests/test_archive.py:57: AssertionError\n=========================== short test summary info ============================\nFAILED outputs/Emobot-Companion/tests/test_archive.py::test_forget_removes_source_and_answer\n1 failed, 50 passed in 0.30s",
+  "round_1_after": "...................................................                      [100%]\n51 passed in 0.28s",
+  "round_2_before": "............................FFFFFF.........................              [100%]\n=================================== FAILURES ===================================\n_______________________ test_model_cannot_invent_memory ________________________\n\n    def test_model_cannot_invent_memory():\n>       assert not acceptable_memory({\"content\": \"用户喜欢狗\", \"confidence\": .99}, \"我喜欢猫\")\nE       AssertionError: assert not True\nE        +  where True = acceptable_memory({'content': '用户喜欢狗', 'confidence': 0.99}, '我喜欢猫')\n\noutputs/Emobot-Companion/tests/test_faults.py:13: AssertionError\n________________ test_forgetting_clears_later_chat_restatements ________________\n\nsettings = Settings(api_url='https://dashscope-intl.aliyuncs.com/compatible-mode/v1', api_key='', fast_model='qwen3.6-flash', rea...voice='BV001_streaming', speech_provider='openai', persona='Be warm, concise, playful, and curious. 尊重用户，先倾听，再提供具体帮助。')\narchive = <emobot.archive.Archive object at 0x10a1b0a10>\n\n    def test_forgetting_clears_later_chat_restatements(settings, archive):\n        companion = Companion(settings, archive, ScriptedCloud([envelope(\"You like cats\"), envelope(\"Still remember your cats\")]))\n        companion.ask(\"I like cats\")\n        identity = archive.remember(\"I like cats\")\n        old_session = companion.session\n        companion.ask(\"what do you know about me?\")\n        companion.forget(identity)\n>       assert archive.history(old_session) == []\nE       AssertionError: assert [{'role': 'us...r your cats'}] == []\nE         \nE         Left contains 4 more items, first extra item: {'role': 'user', 'content': 'I like cats'}\nE         Use -v to get more diff\n\noutputs/Emobot-Companion/tests/test_faults.py:24: AssertionError\n____________ test_json_configuration_rejects_wrong_types[changes0] _____________\n\nsettings = Settings(api_url='https://dashscope-intl.aliyuncs.com/compatible-mode/v1', api_key='', fast_model='qwen3.6-flash', rea...voice='BV001_streaming', speech_provider='openai', persona='Be warm, concise, playful, and curious. 尊重用户，先倾听，再提供具体帮助。')\nchanges = {'memory_enabled': 'false'}\n\n    @pytest.mark.parametrize(\"changes\", [{\"memory_enabled\": \"false\"}, {\"api_key\": 123}, {\"embedding_dimensions\": True}, {\"save_history\": 1}])\n    def test_json_configuration_rejects_wrong_types(settings, changes):\n>       with pytest.raises(ValueError):\n             ^^^^^^^^^^^^^^^^^^^^^^^^^\nE       Failed: DID NOT RAISE ValueError\n\noutputs/Emobot-Companion/tests/test_faults.py:29: Failed\n____________ test_json_configuration_rejects_wrong_types[changes1] _____________\n\nsettings = Settings(api_url='https://dashscope-intl.aliyuncs.com/compatible-mode/v1', api_key='', fast_model='qwen3.6-flash', rea...voice='BV001_streaming', speech_provider='openai', persona='Be warm, concise, playful, and curious. 尊重用户，先倾听，再提供具体帮助。')\nchanges = {'api_key': 123}\n\n    @pytest.mark.parametrize(\"changes\", [{\"memory_enabled\": \"false\"}, {\"api_key\": 123}, {\"embedding_dimensions\": True}, {\"save_history\": 1}])\n    def test_json_configuration_rejects_wrong_types(settings, changes):\n>       with pytest.raises(ValueError):\n             ^^^^^^^^^^^^^^^^^^^^^^^^^\nE       Failed: DID NOT RAISE ValueError\n\noutputs/Emobot-Companion/tests/test_faults.py:29: Failed\n____________ test_json_configuration_rejects_wrong_types[changes2] _____________\n\nsettings = Settings(api_url='https://dashscope-intl.aliyuncs.com/compatible-mode/v1', api_key='', fast_model='qwen3.6-flash', rea...voice='BV001_streaming', speech_provider='openai', persona='Be warm, concise, playful, and curious. 尊重用户，先倾听，再提供具体帮助。')\nchanges = {'embedding_dimensions': True}\n\n    @pytest.mark.parametrize(\"changes\", [{\"memory_enabled\": \"false\"}, {\"api_key\": 123}, {\"embedding_dimensions\": True}, {\"save_history\": 1}])\n    def test_json_configuration_rejects_wrong_types(settings, changes):\n>       with pytest.raises(ValueError):\n             ^^^^^^^^^^^^^^^^^^^^^^^^^\nE       Failed: DID NOT RAISE ValueError\n\noutputs/Emobot-Companion/tests/test_faults.py:29: Failed\n____________ test_json_configuration_rejects_wrong_types[changes3] _____________\n\nsettings = Settings(api_url='https://dashscope-intl.aliyuncs.com/compatible-mode/v1', api_key='', fast_model='qwen3.6-flash', rea...voice='BV001_streaming', speech_provider='openai', persona='Be warm, concise, playful, and curious. 尊重用户，先倾听，再提供具体帮助。')\nchanges = {'save_history': 1}\n\n    @pytest.mark.parametrize(\"changes\", [{\"memory_enabled\": \"false\"}, {\"api_key\": 123}, {\"embedding_dimensions\": True}, {\"save_history\": 1}])\n    def test_json_configuration_rejects_wrong_types(settings, changes):\n>       with pytest.raises(ValueError):\n             ^^^^^^^^^^^^^^^^^^^^^^^^^\nE       Failed: DID NOT RAISE ValueError\n\noutputs/Emobot-Companion/tests/test_faults.py:29: Failed\n=========================== short test summary info ============================\nFAILED outputs/Emobot-Companion/tests/test_faults.py::test_model_cannot_invent_memory\nFAILED outputs/Emobot-Companion/tests/test_faults.py::test_forgetting_clears_later_chat_restatements\nFAILED outputs/Emobot-Companion/tests/test_faults.py::test_json_configuration_rejects_wrong_types[changes0]\nFAILED outputs/Emobot-Companion/tests/test_faults.py::test_json_configuration_rejects_wrong_types[changes1]\nFAILED outputs/Emobot-Companion/tests/test_faults.py::test_json_configuration_rejects_wrong_types[changes2]\nFAILED outputs/Emobot-Companion/tests/test_faults.py::test_json_configuration_rejects_wrong_types[changes3]\n6 failed, 53 passed in 0.31s",
+  "round_2_after": "62 passed, then native desktop test separately passed",
+  "round_3_regressions_before": "FF                                                                       [100%]\n=================================== FAILURES ===================================\n_______________________ test_edited_memory_is_reindexed ________________________\n\narchive = <emobot.archive.Archive object at 0x10aa1fda0>\n\n    def test_edited_memory_is_reindexed(archive):\n        identity = archive.remember(\"I like cats\")\n        assert archive.index(Embedder()) == 1\n        archive.edit_memory(identity, \"I like dogs\")\n>       assert archive.index(Embedder()) == 1\nE       assert 0 == 1\nE        +  where 0 = index(<test_archive.Embedder object at 0x10b5cfce0>)\nE        +    where index = <emobot.archive.Archive object at 0x10aa1fda0>.index\nE        +    and   <test_archive.Embedder object at 0x10b5cfce0> = Embedder()\n\noutputs/Emobot-Companion/tests/test_archive.py:91: AssertionError\n________ test_robot_failure_preserves_reply_and_records_failed_delivery ________\n\nsettings = Settings(api_url='https://dashscope-intl.aliyuncs.com/compatible-mode/v1', api_key='', fast_model='qwen3.6-flash', rea...voice='BV001_streaming', speech_provider='openai', persona='Be warm, concise, playful, and curious. 尊重用户，先倾听，再提供具体帮助。')\narchive = <emobot.archive.Archive object at 0x10bb044d0>\n\n    def test_robot_failure_preserves_reply_and_records_failed_delivery(settings, archive):\n        from sqlalchemy import select\n        class RobotError(Exception):\n            pass\n        class Robot:\n            connected = True\n            def send_actions(self, _actions):\n                raise RobotError(\"radio lost\")\n        companion = Companion(settings, archive, DemoCloud(), Robot())\n>       reply = companion.ask(\"hello\")\n                ^^^^^^^^^^^^^^^^^^^^^^\n\noutputs/Emobot-Companion/tests/test_conversation.py:120: \n_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ \noutputs/Emobot-Companion/src/emobot/companion.py:166: in ask\n    self.robot.send_actions(actions)\n_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ \n\nself = <test_conversation.test_robot_failure_preserves_reply_and_records_failed_delivery.<locals>.Robot object at 0x10bb04b30>\n_actions = (Action(name='eye_happy', duration=700), Action(name='head_nod', duration=800))\n\n    def send_actions(self, _actions):\n>       raise RobotError(\"radio lost\")\nE       test_conversation.test_robot_failure_preserves_reply_and_records_failed_delivery.<locals>.RobotError: radio lost\n\noutputs/Emobot-Companion/tests/test_conversation.py:118: RobotError\n=========================== short test summary info ============================\nFAILED outputs/Emobot-Companion/tests/test_archive.py::test_edited_memory_is_reindexed\nFAILED outputs/Emobot-Companion/tests/test_conversation.py::test_robot_failure_preserves_reply_and_records_failed_delivery\n2 failed in 0.15s"
+}

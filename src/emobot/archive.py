@@ -61,7 +61,7 @@ class Archive:
         if address in {"sqlite://", "sqlite:///:memory:"}:
             options["poolclass"] = StaticPool
         self.engine = create_engine(address, **options)
-        vector_type = JSON()
+        vector_type = JSON(none_as_null=True)
         if self.engine.dialect.name == "postgresql":
             from pgvector.sqlalchemy import Vector
 
@@ -358,12 +358,32 @@ class Archive:
                 for row in rows:
                     words = terms(row["content"])
                     keyword = len(query_terms & words) / max(1, len(query_terms))
-                    similarity = max(0.0, cosine(vector, row["vector"])) if vector and row["vector"] else 0
+                    stored_vector = row["vector"]
+                    similarity = (
+                        max(0.0, cosine(vector, stored_vector))
+                        if vector is not None and stored_vector is not None
+                        else 0
+                    )
                     score = keyword if not vector else 0.3 * keyword + 0.7 * similarity
                     if score > 0:
                         matches.append(
                             {"content": row["content"], "source": table.name, "id": row["id"], "score": score}
                         )
+            if (
+                include_memories
+                and not matches
+                and re.search(r"记得我|我的爱好|我的偏好|remember.*me|about me|my preferences", query, re.I)
+            ):
+                recent = connection.execute(
+                    select(self.memories)
+                    .where(self.memories.c.user_id == self.user)
+                    .order_by(self.memories.c.created.desc())
+                    .limit(4)
+                ).mappings()
+                matches.extend(
+                    {"content": row["content"], "source": "memories", "id": row["id"], "score": 0.1}
+                    for row in recent
+                )
         return sorted(matches, key=lambda m: m["score"], reverse=True)[:limit]
 
     def record_actions(self, session: str, actions, status: str) -> None:

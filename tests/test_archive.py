@@ -82,3 +82,11 @@ def test_wrong_dimensions_or_nonfinite_not_indexed(archive):
         archive.index(Wrong())
     assert archive.list_memories()[0]["vector"] is None
     assert cosine([1, 0], [0, 1]) == 0
+
+
+def test_edited_memory_is_reindexed(archive):
+    identity = archive.remember("I like cats")
+    assert archive.index(Embedder()) == 1
+    archive.edit_memory(identity, "I like dogs")
+    assert archive.index(Embedder()) == 1
+    assert archive.list_memories()[0]["vector"] == [1.0, 0.0, 0.0]

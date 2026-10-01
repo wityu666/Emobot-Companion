@@ -1,0 +1,78 @@
+{
+  "reference_commit": "2c3e4a76bb0c7b64ca0253fd1ede169cdc339de0",
+  "old_logic_files": 65,
+  "new_logic_files": 15,
+  "excluded": [
+    "bitmap artwork and generated Clips.h",
+    "GPL license and documentation",
+    "third-party libraries",
+    "tests/evaluators",
+    "secrets examples and include shim"
+  ],
+  "metrics": {
+    "literal_normalized_5gram": {
+      "new_unique_ngrams": 14530,
+      "new_ngrams_also_in_old_percent": 6.77,
+      "corpus_jaccard_percent": 2.71,
+      "strongest_pairs": [
+        {
+          "new": "src/emobot/speech.py",
+          "closest_old": "pc_client/pc_client_v3.0.0/audio.py",
+          "jaccard_percent": 5.52
+        },
+        {
+          "new": "firmware/EmobotS3/main.cpp",
+          "closest_old": "firmware/Arduino_Esp32s3/esp32s3_v2.0.1/net.cpp",
+          "jaccard_percent": 3.6
+        },
+        {
+          "new": "firmware/EmobotS3/CloudVoice.h",
+          "closest_old": "firmware/Arduino_Esp32s3/esp32s3_v2.0.1/asr.cpp",
+          "jaccard_percent": 3.06
+        },
+        {
+          "new": "src/emobot/gui.py",
+          "closest_old": "pc_client/pc_client_v3.0.0/main.py",
+          "jaccard_percent": 2.23
+        },
+        {
+          "new": "src/emobot/link.py",
+          "closest_old": "pc_client/pc_client_v3.0.0/connect.py",
+          "jaccard_percent": 2.18
+        }
+      ]
+    },
+    "identifier_normalized_8gram": {
+      "new_unique_ngrams": 11393,
+      "new_ngrams_also_in_old_percent": 22.1,
+      "corpus_jaccard_percent": 11.2,
+      "strongest_pairs": [
+        {
+          "new": "src/emobot/gui.py",
+          "closest_old": "pc_client/pc_client_v3.0.0/main.py",
+          "jaccard_percent": 14.54
+        },
+        {
+          "new": "firmware/EmobotS3/main.cpp",
+          "closest_old": "firmware/Arduino_Esp32s3/esp32s3_v2.0.1/net.cpp",
+          "jaccard_percent": 8.33
+        },
+        {
+          "new": "firmware/EmobotS3/CloudVoice.h",
+          "closest_old": "firmware/Arduino_Esp32s3/esp32s3_v2.0.1/asr.cpp",
+          "jaccard_percent": 7.02
+        },
+        {
+          "new": "src/emobot/speech.py",
+          "closest_old": "pc_client/pc_client_v3.0.0/audio.py",
+          "jaccard_percent": 6.85
+        },
+        {
+          "new": "src/emobot/link.py",
+          "closest_old": "pc_client/pc_client_v3.0.0/main.py",
+          "jaccard_percent": 6.11
+        }
+      ]
+    }
+  }
+}

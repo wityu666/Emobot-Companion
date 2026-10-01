@@ -1,5 +1,5 @@
 [build-system]
-requires = ["setuptools>=75"]
+requires = ["setuptools>=77,<83"]
 build-backend = "setuptools.build_meta"
 
 [project]
@@ -7,11 +7,13 @@ name = "emobot-companion"
 version = "1.0.0"
 description = "A bilingual desktop companion and ESP32-S3 robot controller"
 requires-python = ">=3.11"
-license = {text = "GPL-3.0-only"}
+license = "GPL-3.0-only"
+license-files = ["LICENSE", "NOTICE.md"]
 dependencies = ["SQLAlchemy>=2.0,<3", "httpx>=0.27,<1", "pyserial>=3.5,<4", "bleak>=0.22,<4"]
 
 [project.optional-dependencies]
 voice = ["SpeechRecognition>=3.10,<4", "PyAudio>=0.2.14,<1", "pygame>=2.6,<3"]
+flash = ["esptool>=4.8,<6"]
 postgres = ["psycopg[binary]>=3.2,<4", "pgvector>=0.3,<1"]
 dev = ["pytest>=8,<10", "ruff>=0.9,<1", "build>=1.2,<2", "platformio==6.1.18"]
 

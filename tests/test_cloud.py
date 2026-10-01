@@ -61,3 +61,26 @@ def test_server_error_never_exposes_token(settings):
         assert "test-only" not in str(error.value)
     finally:
         provider.close()
+
+
+def test_volcano_config_is_used_and_credentials_correct(settings):
+    import base64
+
+    seen = []
+
+    def handler(request):
+        seen.append(request)
+        return httpx.Response(200, json={"code": 3000, "data": base64.b64encode(b"mp3").decode()})
+
+    provider = cloud_with(
+        replace(settings, speech_provider="volcano", volcano_app_id="demo-app", volcano_token="demo-token"),
+        handler,
+    )
+    try:
+        assert provider.synthesize("hello") == b"mp3"
+        assert seen[0].headers["Authorization"] == "Bearer; demo-token"
+        payload = json.loads(seen[0].content)
+        assert payload["app"]["appid"] == "demo-app"
+        assert payload["audio"]["voice_type"] == settings.volcano_voice
+    finally:
+        provider.close()

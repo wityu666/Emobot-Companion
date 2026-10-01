@@ -4,5 +4,7 @@
   "frames_each": 28,
   "raw_bytes": 602112,
   "rle_bytes": 657134,
-  "header_sha256": "469829aa32dadf3c1d67f55789314f8b6c4c9d6264326fee2425d42fb2d7469c"
+  "header_sha256": "469829aa32dadf3c1d67f55789314f8b6c4c9d6264326fee2425d42fb2d7469c",
+  "raw_pixels_sha256": "7cefdcbba8edaf12b2f2315cde65f35ba8b9f9922b7c99415738116f9105ffa9",
+  "independent_lossless_frames_verified": 1176
 }

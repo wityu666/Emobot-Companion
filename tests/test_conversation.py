@@ -106,3 +106,23 @@ def test_keyword_docs_route_works_in_english(settings, archive, tmp_path):
 def test_offline_demo_labels_both_languages(settings, archive):
     assert "演示模式" in Companion(settings, archive, DemoCloud()).ask("hello").text
     assert "Demo:" in Companion(replace(settings, language="en"), archive, DemoCloud()).ask("hello").text
+
+
+def test_robot_failure_preserves_reply_and_records_failed_delivery(settings, archive):
+    from sqlalchemy import select
+
+    class RobotError(Exception):
+        pass
+
+    class Robot:
+        connected = True
+
+        def send_actions(self, _actions):
+            raise RobotError("radio lost")
+
+    companion = Companion(settings, archive, DemoCloud(), Robot())
+    reply = companion.ask("hello")
+    assert reply.text and "Robot delivery failed" in reply.warnings[0]
+    with archive.engine.connect() as connection:
+        rows = connection.execute(select(archive.actions)).mappings().all()
+    assert rows[0]["status"] == "failed"

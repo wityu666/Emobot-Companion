@@ -1,0 +1,12 @@
+include README.md LICENSE NOTICE.md platformio.ini requirements-tested.txt .env.example .clang-format
+recursive-include src *.py *.md
+recursive-include tests *.py
+recursive-include firmware *.h *.cpp *.csv
+recursive-include assets *.md *.json *.jpg
+recursive-include docs *.md *.json
+recursive-include tools *.py
+recursive-include data *.json
+prune .pio
+prune .git
+prune build
+prune dist

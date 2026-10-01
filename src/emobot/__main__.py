@@ -67,7 +67,7 @@ def main(argv: list[str] | None = None) -> int:
                     from .link import RobotLink
 
                     robot = RobotLink()
-                    Desktop(Companion(config, archive, cloud, robot), robot, args.demo).run()
+                    Desktop(Companion(config, archive, cloud, robot), robot, args.demo, args.config).run()
                 else:
                     reply = Companion(config, archive, cloud).ask(args.question)
                     print(

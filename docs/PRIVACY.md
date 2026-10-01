@@ -1,0 +1,13 @@
+# Data boundaries
+
+Desktop settings and local SQLite data stay in your configured state directory. API keys are private local configuration, not encrypted secrets. Raw chat history is saved when `save_history` is enabled. Disabling automatic memory does not disable raw history; configure the two switches separately. A current conversation still needs temporary in-memory context.
+
+A cloud chat request includes the current question, up to 10 prior turns, persona and selected memory/document snippets. Embedding requests send query/chunk text. Cloud speech sends microphone recordings or reply text to the configured providers. Those services have their own retention and billing policies. Explicit demo mode never sends cloud requests.
+
+Automatic preferences are conservatively filtered and grounded in current user text. Filtering is not a general personal-data detector. Manual memories and imported documents can contain whatever you enter, so inspect them before enabling cloud requests. User IDs scope database reads/changes. They are application namespaces, not an authentication system for multiple untrusted users sharing a process.
+
+Forget-selected deletes the selected memory and clears all this user's saved chat, session, action and skill history, plus the in-process conversation context. Forget-all additionally removes all this user's memories. Other users and imported documents are retained. This does not erase an external provider's history, backups, SQLite free pages or separately flashed device storage; it is application-level deletion, not a forensic secure erase.
+
+The standalone robot stores Wi-Fi credentials in NVS and 10 voice turns in plain FFat. Microphone and request scratch files are removed after a voice turn. Reset_wifi only removes Wi-Fi configuration. Intentional FFat upload/reinitialization overwrites device chat history. BLE control has no application user authentication and is intended for a personal/local demonstration device; do not treat it as a remote multi-user service.
+
+This public source contains no original API screenshots or user configuration. Do not add real settings, `.env`, `secrets.h`, recordings or personal databases to Git. HTTPS certificate validation remains enabled for desktop and robot cloud calls.

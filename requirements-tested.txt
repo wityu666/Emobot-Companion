@@ -1,0 +1,9 @@
+# Direct dependency versions tested locally; platform-specific transitive dependencies resolve normally.
+SQLAlchemy==2.1.1
+httpx==0.28.1
+pyserial==3.5
+bleak==3.0.2
+pytest==9.1.1
+ruff==0.16.9
+build==1.6.1
+platformio==6.1.18

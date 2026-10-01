@@ -1,0 +1,65 @@
+name: Verification
+on: [push, pull_request, workflow_dispatch]
+permissions:
+  contents: read
+jobs:
+  python:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python: ['3.11', '3.12']
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1
+        with:
+          python-version: ${{ matrix.python }}
+      - run: sudo apt-get update && sudo apt-get install -y python3-tk xvfb
+      - run: python -m pip install -r requirements-tested.txt -e '.[dev,postgres]'
+      - run: ruff check src tests tools
+      - run: ruff format --check src tests tools
+      - run: xvfb-run -a env EMOBOT_GUI_TESTS=1 pytest -q
+      - run: python -m build
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: python-${{ matrix.python }}
+          path: dist/*
+  postgres:
+    runs-on: ubuntu-latest
+    services:
+      database:
+        image: pgvector/pgvector:pg16
+        env:
+          POSTGRES_USER: emobot
+          POSTGRES_PASSWORD: local-ci-only
+          POSTGRES_DB: emobot_test
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U emobot -d emobot_test"
+          --health-interval 5s --health-timeout 5s --health-retries 10
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1
+        with:
+          python-version: '3.12'
+      - run: python -m pip install -r requirements-tested.txt -e '.[dev,postgres]'
+      - run: pytest -q tests/test_release.py
+        env:
+          EMOBOT_TEST_POSTGRES: postgresql+psycopg://emobot:local-ci-only@localhost/emobot_test
+  firmware:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1
+        with:
+          python-version: '3.12'
+      - run: python -m pip install platformio==6.1.18
+      - run: pio run
+      - run: pio run -t buildfs
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: esp32-s3-images
+          path: |
+            .pio/build/emobot-s3/firmware.bin
+            .pio/build/emobot-s3/bootloader.bin
+            .pio/build/emobot-s3/partitions.bin
+            .pio/build/emobot-s3/fatfs.bin

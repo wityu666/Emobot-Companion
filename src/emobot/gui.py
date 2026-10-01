@@ -14,8 +14,9 @@ from .speech import Speech, flash_image
 
 
 class Desktop:
-    def __init__(self, companion, robot, demo: bool = False):
+    def __init__(self, companion, robot, demo: bool = False, config_path: Path | None = None):
         self.companion, self.robot, self.demo = companion, robot, demo
+        self.config_path = config_path
         self.window = tk.Tk()
         self.window.title("Emobot Companion · DEMO" if demo else "Emobot Companion")
         self.window.geometry("1060x760")
@@ -55,7 +56,7 @@ class Desktop:
         ).pack(anchor="nw")
         self.apply_theme(self.companion.settings.theme)
         self.window.protocol("WM_DELETE_WINDOW", self.close)
-        self.window.after(50, self._drain)
+        self._poll_handle = self.window.after(50, self._drain)
 
     def run(self) -> None:
         self.window.mainloop()
@@ -69,9 +70,9 @@ class Desktop:
 
         def work():
             try:
-                self.results.put((True, job(), callback))
+                self.results.put((True, job(), callback, True))
             except Exception as error:
-                self.results.put((False, f"{type(error).__name__}: {error}", None))
+                self.results.put((False, f"{type(error).__name__}: {error}", None, True))
 
         self.pool.submit(work)
 
@@ -80,9 +81,10 @@ class Desktop:
             return
         try:
             while True:
-                success, result, callback = self.results.get_nowait()
-                self.busy = False
-                self.status.set("Ready / 就绪" if success else str(result))
+                success, result, callback, completed = self.results.get_nowait()
+                if completed:
+                    self.busy = False
+                    self.status.set("Ready / 就绪" if success else str(result))
                 if success and callback:
                     callback(result)
         except queue.Empty:
@@ -93,7 +95,7 @@ class Desktop:
                 self.status.set(str(event))
         except queue.Empty:
             pass
-        self.window.after(50, self._drain)
+        self._poll_handle = self.window.after(50, self._drain)
 
     def _chat_page(self) -> None:
         page = self.pages["Chat / 对话"]
@@ -125,6 +127,7 @@ class Desktop:
 
         def chat():
             reply = self.companion.ask(content)
+            self.results.put((True, reply, self.show_reply, False))
             if self.companion.settings.voice_enabled and not self.demo:
                 try:
                     Speech(self.companion.cloud).speak(reply.text)
@@ -132,7 +135,7 @@ class Desktop:
                     reply = replace(reply, warnings=reply.warnings + (f"Voice: {type(error).__name__}",))
             return reply
 
-        self.submit(chat, self.show_reply)
+        self.submit(chat, lambda reply: self.status.set(f"{reply.route}; {'; '.join(reply.warnings)}"))
 
     def show_reply(self, reply) -> None:
         self.append("Emobot", reply.text)
@@ -283,18 +286,33 @@ class Desktop:
             values = {name: variable.get() for name, variable in self.config_vars.items()}
             values["embedding_dimensions"] = int(values["embedding_dimensions"])
             updated = replace(self.companion.settings, **values).validate()
+            if any(
+                getattr(updated, name) != getattr(self.companion.settings, name)
+                for name in ("user", "database_url", "embedding_dimensions")
+            ):
+                updated.save(self.config_path)
+                self.status.set("Settings saved. Restart to apply database/user/dimensions / 重启后应用")
+                return
             self.companion.update_settings(updated)
-            updated.save()
+            updated.save(self.config_path)
             self.apply_theme(updated.theme)
             self.status.set("Settings saved / 设置已保存")
         except (ValueError, tk.TclError) as error:
             self.status.set(str(error))
 
     def apply_theme(self, name: str) -> None:
+        style = ttk.Style(self.window)
+        if not hasattr(self, "_native_theme"):
+            self._native_theme = style.theme_use()
+            self._native_colors = (
+                style.lookup(".", "background") or "#f5f7fb",
+                style.lookup(".", "foreground") or "#182338",
+            )
         dark = name == "dark"
         background, foreground = ("#20242c", "#f4f6fa") if dark else ("#f5f7fb", "#182338")
-        style = ttk.Style(self.window)
-        style.theme_use("clam")
+        if name == "system":
+            background, foreground = self._native_colors
+        style.theme_use(self._native_theme if name == "system" else "clam")
         style.configure(".", background=background, foreground=foreground)
         style.configure("TNotebook.Tab", padding=[8, 8])
         self.window.configure(background=background)
@@ -340,7 +358,7 @@ class Desktop:
             return
         updated = replace(self.companion.settings, persona=value)
         self.companion.update_settings(updated)
-        updated.save()
+        updated.save(self.config_path)
         self.status.set("Persona saved / 人格已保存")
 
     def refresh_memory(self) -> None:
@@ -436,11 +454,14 @@ class Desktop:
         self.submit(execute, lambda result: self.flash_log.insert("end", result + "\n"))
 
     def close(self) -> None:
+        if self.closing:
+            return
         if self.busy:
             self.status.set("Waiting for operation to finish before closing / 等待操作完成后关闭")
             self.window.after(200, self.close)
             return
         self.closing = True
+        self.window.after_cancel(self._poll_handle)
         self.pool.shutdown(wait=False, cancel_futures=True)
         self.robot.close()
         self.companion.cloud.close()

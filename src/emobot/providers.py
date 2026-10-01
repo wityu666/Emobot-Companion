@@ -24,7 +24,14 @@ class Cloud:
         self.http.close()
 
     def _request(
-        self, path: str, *, body: dict | None = None, url: str | None = None, key: str | None = None, **kwargs
+        self,
+        path: str,
+        *,
+        body: dict | None = None,
+        url: str | None = None,
+        key: str | None = None,
+        auth_prefix: str = "Bearer ",
+        **kwargs,
     ) -> httpx.Response:
         credential = self.settings.api_key if key is None else key
         if not credential:
@@ -32,7 +39,7 @@ class Cloud:
         endpoint = (url or self.settings.api_url).rstrip("/") + path
         try:
             with self.http.stream(
-                "POST", endpoint, headers={"Authorization": f"Bearer {credential}"}, json=body, **kwargs
+                "POST", endpoint, headers={"Authorization": auth_prefix + credential}, json=body, **kwargs
             ) as response:
                 response.raise_for_status()
                 data = bytearray()
@@ -131,7 +138,11 @@ class Cloud:
             "request": {"reqid": uid(), "text": content, "operation": "query"},
         }
         response = self._request(
-            "/api/v1/tts", url="https://openspeech.bytedance.com", key=config.volcano_token, body=body
+            "/api/v1/tts",
+            url="https://openspeech.bytedance.com",
+            key=config.volcano_token,
+            body=body,
+            auth_prefix="Bearer; ",
         )
         try:
             data = response.json()
@@ -147,6 +158,9 @@ class DemoCloud:
 
     def close(self) -> None:
         pass
+
+    def embed(self, content: str) -> list[float]:
+        raise ProviderError("Demo mode has no cloud embeddings; use keyword retrieval")
 
     def complete(self, messages: list[dict], *, reasoning: bool = False) -> str:
         english = "Language: en" in messages[0]["content"]
