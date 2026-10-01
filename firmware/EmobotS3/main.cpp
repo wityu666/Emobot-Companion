@@ -191,7 +191,7 @@ void setup() {
     startPortal();
   configTime(0, 0, "pool.ntp.org", "time.cloudflare.com");
   discovery.begin(4210);
-  announce("{\"ready\":true,\"version\":\"1.0.0\"}");
+  announce("{\"ready\":true,\"version\":\"1.1.0\"}");
 }
 void loop() {
   if (!inbox) {

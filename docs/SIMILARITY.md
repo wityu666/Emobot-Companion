@@ -12,9 +12,9 @@ Method 1 tokenizes Python and C++/Arduino, removes comments/formatting, normaliz
 
 | Metric | Literal-normalized 5-gram | Identifier-normalized 8-gram |
 |---|---:|---:|
-| Corpus Jaccard overlap (intersection / union) | 2.71% | 11.2% |
-| Rewritten unique sequences also found anywhere in reference | 6.77% | 22.1% |
-| Strongest individual file-pair Jaccard | 5.52% | 14.54% |
+| Corpus Jaccard overlap (intersection / union) | 2.71% | 11.23% |
+| Rewritten unique sequences also found anywhere in reference | 6.73% | 22.07% |
+| Strongest individual file-pair Jaccard | 5.52% | 14.62% |
 
 Exact machine results and closest file pairs are in source-similarity.json. The percentages depend on the declared scope and algorithm; they are **not** a universal “code similarity percentage,” an external plagiarism-check score, or proof of independent authorship. Shared protocol identifiers and third-party APIs naturally create overlap. The new service boundaries, storage lifecycle, GUI ownership, provider implementation and embedded execution flow are substantive implementation changes.
 

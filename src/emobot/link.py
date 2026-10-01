@@ -32,11 +32,15 @@ class RobotLink:
 
     def _event(self, chunk: bytes) -> None:
         for message in self._decoder.feed(chunk):
-            try:
-                self.events.put_nowait(message)
-            except queue.Full:
-                self.events.get_nowait()
-                self.events.put_nowait(message)
+            while True:
+                try:
+                    self.events.put_nowait(message)
+                    break
+                except queue.Full:
+                    try:
+                        self.events.get_nowait()
+                    except queue.Empty:
+                        pass  # The GUI may have drained the full queue before this eviction.
 
     def _await(self, coroutine, timeout: int = 15):
         future = asyncio.run_coroutine_threadsafe(coroutine, self._loop)
@@ -95,7 +99,7 @@ class RobotLink:
             try:
                 await client.connect()
                 await client.start_notify(BLE_CHARACTERISTIC, lambda _sender, data: self._event(bytes(data)))
-            except Exception:
+            except (Exception, asyncio.CancelledError):
                 await client.disconnect()
                 raise
             return client

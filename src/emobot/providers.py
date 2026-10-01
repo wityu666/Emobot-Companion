@@ -47,7 +47,13 @@ class Cloud:
                     data.extend(part)
                     if len(data) > 12_000_000:
                         raise ProviderError("Provider response exceeds 12 MB")
-                return httpx.Response(response.status_code, headers=response.headers, content=bytes(data))
+                # iter_bytes() already decodes content encodings; retaining gzip headers decodes twice.
+                headers = {
+                    name: value
+                    for name, value in response.headers.items()
+                    if name.lower() not in {"content-encoding", "content-length", "transfer-encoding"}
+                }
+                return httpx.Response(response.status_code, headers=headers, content=bytes(data))
         except httpx.HTTPStatusError as error:
             raise ProviderError(f"Provider HTTP {error.response.status_code}") from None
         except httpx.HTTPError:

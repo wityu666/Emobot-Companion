@@ -67,7 +67,7 @@ def test_only_durable_explicit_preferences_saved(settings, archive):
     cloud = ScriptedCloud([envelope(memories=[candidate])])
     companion = Companion(settings, archive, cloud)
     companion.ask("我喜欢猫")
-    assert archive.list_memories()[0]["content"] == "用户喜欢猫"
+    assert archive.list_memories()[0]["content"] == "我喜欢猫"
 
 
 @pytest.mark.parametrize(

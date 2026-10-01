@@ -93,3 +93,17 @@ def test_flash_arguments_are_literal(tmp_path, monkeypatch):
     assert "shell" not in seen[0][1]
     with pytest.raises(ValueError):
         flash_image("port", image, offset="0xfff")
+
+
+def test_speech_recognition_converts_wav_on_python313():
+    import io
+    import wave
+
+    sr = pytest.importorskip("speech_recognition")
+    audio = sr.AudioData(b"\0\0" * 1600, 16000, 2)
+    converted = audio.get_wav_data(convert_rate=8000, convert_width=1)
+    with wave.open(io.BytesIO(converted)) as recording:
+        assert recording.getframerate() == 8000
+        assert recording.getsampwidth() == 1
+        assert recording.getnchannels() == 1
+        assert recording.readframes(recording.getnframes())

@@ -47,7 +47,7 @@ def decode_reply(raw: str) -> tuple[str, tuple[Action, ...], list[dict]]:
 
 
 def acceptable_memory(candidate: object, question: str) -> bool:
-    if not isinstance(candidate, dict):
+    if not isinstance(candidate, dict) or not 3 <= len(question) <= 500:
         return False
     content, confidence = candidate.get("content"), candidate.get("confidence", 0)
     if (
@@ -155,7 +155,7 @@ class Companion:
                 for candidate in candidates:
                     if acceptable_memory(candidate, question):
                         self.archive.remember(
-                            candidate["content"],
+                            question,
                             candidate.get("category", "preference"),
                             candidate["confidence"],
                             source,

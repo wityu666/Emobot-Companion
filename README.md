@@ -6,13 +6,14 @@ A bilingual desktop companion with long-term memory, document retrieval and a re
 
 ## Try it without hardware or API keys
 
-Use Python 3.11 or newer. Tk is required only for the desktop window.
+Use Python 3.13.x. Tk is required only for the desktop window. Package metadata and CI target the 3.13 series.
 
 ```bash
-python -m venv .venv
 # macOS / Linux
+python3.13 -m venv .venv
 source .venv/bin/activate
-# Windows: .venv\Scripts\activate
+# Windows: py -3.13 -m venv .venv
+#          .venv\Scripts\activate
 python -m pip install -e .
 emobot --demo chat "你好，介绍一下你自己"
 emobot --demo gui
@@ -74,7 +75,7 @@ pio device monitor -b 115200
 
 ## Verification and portfolio notes
 
-Three sequential review/fix rounds are recorded in [review 1](docs/REVIEW-1.md), [review 2](docs/REVIEW-2.md) and [review 3](docs/REVIEW-3.md). [Validation](docs/VALIDATION.md) distinguishes automated checks from hardware/cloud checks still requiring your equipment. [Feature mapping](docs/FEATURE-MAP.md) traces the existing features to their new implementation. [Interview notes](docs/PORTFOLIO.md) explain design decisions without inventing individual authorship.
+Four sequential review/fix rounds are recorded in [review 1](docs/REVIEW-1.md), [review 2](docs/REVIEW-2.md), [review 3](docs/REVIEW-3.md) and [review 4](docs/REVIEW-4.md). [Validation](docs/VALIDATION.md) distinguishes automated checks from hardware/cloud checks still requiring your equipment. [Feature mapping](docs/FEATURE-MAP.md) traces the existing features to their new implementation. [Interview notes](docs/PORTFOLIO.md) explain design decisions without inventing individual authorship.
 
 ```bash
 python -m pip install -e '.[dev]'

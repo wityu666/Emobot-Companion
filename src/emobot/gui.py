@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import logging
 import queue
 import tkinter as tk
 from concurrent.futures import ThreadPoolExecutor
@@ -462,8 +463,13 @@ class Desktop:
             return
         self.closing = True
         self.window.after_cancel(self._poll_handle)
-        self.pool.shutdown(wait=False, cancel_futures=True)
-        self.robot.close()
-        self.companion.cloud.close()
-        self.companion.archive.close()
+        self.pool.shutdown(wait=True, cancel_futures=True)
+        errors = []
+        for component in (self.robot, self.companion.cloud, self.companion.archive):
+            try:
+                component.close()
+            except Exception as error:
+                errors.append(type(error).__name__)
         self.window.destroy()
+        if errors:
+            logging.getLogger(__name__).warning("Shutdown cleanup incomplete: %s", ", ".join(errors))

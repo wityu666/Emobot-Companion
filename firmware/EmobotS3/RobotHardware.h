@@ -108,7 +108,7 @@ public:
     face(1, 0);
   }
   bool accept(JsonArrayConst actions) {
-    if (actions.size() > 12 || length)
+    if (actions.size() > 12 || length || movingMs || !enabled)
       return false;
     uint32_t total = 0;
     for (JsonVariantConst item : actions) {
@@ -135,6 +135,7 @@ public:
     if (command == "on" || command == "off") {
       enabled = command == "on";
       length = 0;
+      movingMs = 0;
       pose(cx, cy);
       return "ok";
     }
@@ -150,6 +151,8 @@ public:
         sscanf(command.c_str(), "adjust_y %d %c", &delta, &trailing) == 1) {
       if (delta < -45 || delta > 45)
         return "invalid calibration";
+      length = 0;
+      movingMs = 0;
       if (command.startsWith("adjust_x")) {
         cx = constrain(cx + delta, 45, 135);
         state.putInt("cx", cx);
@@ -163,6 +166,8 @@ public:
     int x, y, duration;
     if (sscanf(command.c_str(), "head_move %d %d %d %c", &x, &y, &duration, &trailing) == 3 &&
         x >= 0 && x <= 180 && y >= 0 && y <= 180 && duration >= 50 && duration <= 5000) {
+      if (!enabled)
+        return "robot is off";
       length = 0;
       movingAt = millis();
       movingMs = duration;

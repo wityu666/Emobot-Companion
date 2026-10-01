@@ -1,4 +1,4 @@
-# Direct dependency versions tested locally; platform-specific transitive dependencies resolve normally.
+# Direct dependency versions tested on Python 3.13; platform-specific transitive dependencies resolve normally.
 SQLAlchemy==2.1.1
 httpx==0.28.1
 pyserial==3.5
@@ -7,3 +7,9 @@ pytest==9.1.1
 ruff==0.16.9
 build==1.6.1
 platformio==6.1.18
+numpy==2.5.3
+pgvector==0.5.0
+psycopg[binary]==3.3.6
+SpeechRecognition==3.17.0
+pygame==2.6.1
+esptool==5.4.0

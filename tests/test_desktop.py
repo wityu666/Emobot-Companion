@@ -51,6 +51,45 @@ def test_desktop_build_and_worker_delivery(settings, archive):
 
 
 @pytest.mark.skipif(os.environ.get("EMOBOT_GUI_TESTS") != "1", reason="Opt-in native Tk test; CI uses Xvfb")
+def test_desktop_cleanup_finishes_after_robot_disconnect_failure(settings, archive, monkeypatch, caplog):
+    from emobot.gui import Desktop
+
+    closed = []
+
+    class Robot:
+        connected = False
+        events = queue.Queue()
+
+        def close(self):
+            raise RuntimeError("disconnect failed: token-test-secret")
+
+    cloud = DemoCloud()
+    desktop = Desktop(Companion(settings, archive, cloud), Robot(), True)
+    desktop.window.withdraw()
+    destroy = desktop.window.destroy
+    archive_close = archive.close
+
+    def close_archive():
+        archive_close()
+        closed.append("archive")
+
+    def destroy_window():
+        destroy()
+        closed.append("window")
+
+    monkeypatch.setattr(cloud, "close", lambda: closed.append("cloud"))
+    monkeypatch.setattr(archive, "close", close_archive)
+    monkeypatch.setattr(desktop.window, "destroy", destroy_window)
+    try:
+        desktop.close()
+        assert closed == ["cloud", "archive", "window"]
+        assert "RuntimeError" in caplog.text and "token-test-secret" not in caplog.text
+    finally:
+        if "window" not in closed:
+            destroy()
+
+
+@pytest.mark.skipif(os.environ.get("EMOBOT_GUI_TESTS") != "1", reason="Opt-in native Tk test; CI uses Xvfb")
 def test_text_appears_before_speech_finishes_and_config_path_is_honored(
     settings, archive, tmp_path, monkeypatch
 ):

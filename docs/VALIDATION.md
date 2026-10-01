@@ -1,5 +1,15 @@
 # Validation — 2026-10-01
 
+## Current target: version 1.1.0 / Python 3.13.x
+
+Review 4 targets only Python 3.13. Local Python 3.13.5/macOS checks: **78 non-GUI tests passed, one PostgreSQL service test skipped**, and **three native Tk cases each passed in a separate process**. Local combined coverage is 81 passes across these runs. A software speech resampling/WAV conversion check passed with SpeechRecognition 3.17 and its Python 3.13 compatibility dependencies.
+
+Ruff and packaging checks and PlatformIO application/FFat builds run under 3.13. Local firmware static RAM is **67,996/327,680 bytes**; application flash is **2,147,945/3,145,728 bytes**. Physical hardware and live provider checks remain pending. Current changes, reproduced failures and the macOS multi-root test limitation are recorded in [review 4](REVIEW-4.md).
+
+CI now has three jobs, all using 3.13: full desktop tests under Xvfb (with voice/flash extras and NumPy), a real PostgreSQL/pgvector service, and application/FFat firmware builds. The first published snapshot passed [its initial CI run](https://github.com/wityu666/Emobot-Companion/actions/runs/36850275277); each later revision must pass its own run before being claimed as verified.
+
+## Historical evidence: initial three reviews
+
 Reference snapshot: `Smh-GOAT/Emobot@2c3e4a76bb0c7b64ca0253fd1ede169cdc339de0`.
 
 - **72 tests passed, 1 skipped** on Python 3.12.14/macOS ARM64, including two native Tk tests. The skip is an actual PostgreSQL/pgvector server integration test; an isolated service job is configured in CI.
@@ -12,10 +22,10 @@ Reference snapshot: `Smh-GOAT/Emobot@2c3e4a76bb0c7b64ca0253fd1ede169cdc339de0`.
 - FFat image built successfully: **5,173,248 bytes**.
 - Python wheel and source distribution built successfully; packaged prompt resources and a demo run from the installed wheel were verified.
 
-Three sequential self-review/fix rounds have separate documents and Git commits. The same implementation assistant performed them; there is no claim of independent human review. Machine evidence and versions are in `validation.json`.
+The initial three sequential self-review/fix rounds have separate documents and Git commits. Review 4 and the current 3.13 evidence are also recorded. The same implementation assistant performed them; there is no claim of independent human review. Machine evidence and versions are in `validation.json`.
 
 ## Remaining target-environment checks
 
-No physical board, calibrated mechanism, microphones/speakers or provider credentials were supplied. Real ASR/chat/TTS/embeddings, BLE radio, Wi-Fi provisioning, I²S quality and mechanical output therefore remain unverified. PostgreSQL server integration and remote GitHub Actions have not been relabeled as local passes. Complete the bring-up checklist in HARDWARE.md using your device/account before presenting a physical end-to-end success claim.
+No physical board, calibrated mechanism, microphones/speakers or provider credentials were supplied. Real ASR/chat/TTS/embeddings, BLE radio, Wi-Fi provisioning, I²S quality and mechanical output therefore remain unverified. PostgreSQL server integration passed in the first published CI run and remains configured for this round; remote checks are recorded separately from local passes. Complete the bring-up checklist in HARDWARE.md using your device/account before presenting a physical end-to-end success claim.
 
 The test suite uses scripted/demo providers and HTTP contract mocks; it does not measure real model empathy or answer quality. Local source-overlap figures in SIMILARITY.md describe their specific lexical method, excluding declared shared material, rather than a universal plagiarism score.
