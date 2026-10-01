@@ -16,6 +16,12 @@ jobs:
       - run: ruff format --check src tests tools
       - run: xvfb-run -a env EMOBOT_GUI_TESTS=1 pytest -q
       - run: python -m build
+      - name: Smoke-test the installed wheel under Python 3.13
+        run: |
+          python -m venv --system-site-packages /tmp/emobot-wheel-check
+          /tmp/emobot-wheel-check/bin/python -m pip install --no-deps --ignore-installed dist/*.whl
+          cd /tmp
+          EMOBOT_HOME=/tmp/emobot-wheel-state /tmp/emobot-wheel-check/bin/python -c 'import emobot; from importlib.resources import files; assert "/tmp/emobot-wheel-check/" in emobot.__file__; assert files("emobot.resources").joinpath("contract.md").read_text(); from emobot.__main__ import main; main(["--demo", "chat", "hello"])'
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
           name: python-3.13

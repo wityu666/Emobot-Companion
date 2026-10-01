@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import base64
 import json
+import math
 from pathlib import Path
 
 import httpx
@@ -97,8 +98,11 @@ class Cloud:
             vector = response.json()["data"][0]["embedding"]
             if not isinstance(vector, list) or any(type(v) not in {int, float} for v in vector):
                 raise ValueError
-            return [float(v) for v in vector]
-        except (ValueError, KeyError, TypeError, IndexError):
+            values = [float(v) for v in vector]
+            if len(values) != config.embedding_dimensions or any(not math.isfinite(v) for v in values):
+                raise ValueError
+            return values
+        except (ValueError, KeyError, TypeError, IndexError, OverflowError):
             raise ProviderError("Provider returned invalid embeddings") from None
 
     def transcribe(self, path: Path) -> str:
@@ -119,7 +123,7 @@ class Cloud:
     def synthesize(self, content: str) -> bytes:
         if self.settings.speech_provider == "volcano":
             return self._volcano(content)
-        return self._request(
+        response = self._request(
             "/audio/speech",
             body={
                 "model": self.settings.tts_model,
@@ -127,7 +131,11 @@ class Cloud:
                 "voice": self.settings.voice,
                 "response_format": "mp3",
             },
-        ).content
+        )
+        content_type = response.headers.get("content-type", "").split(";", 1)[0].strip().lower()
+        if not response.content or content_type.endswith("json"):
+            raise ProviderError("Provider returned invalid speech audio")
+        return response.content
 
     def _volcano(self, content: str) -> bytes:
         from .archive import uid
@@ -152,9 +160,12 @@ class Cloud:
         )
         try:
             data = response.json()
-            if data.get("code") != 3000:
+            if not isinstance(data, dict) or data.get("code") != 3000:
                 raise ValueError
-            return base64.b64decode(data["data"], validate=True)
+            audio = base64.b64decode(data["data"], validate=True)
+            if not audio:
+                raise ValueError
+            return audio
         except (ValueError, KeyError, TypeError):
             raise ProviderError("Volcano TTS rejected the synthesis request") from None
 

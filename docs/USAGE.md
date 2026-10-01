@@ -24,6 +24,8 @@ emobot gui
 
 不要把真实密钥写进仓库、录屏或 README。设置文件在 `EMOBOT_HOME` 指定的目录，默认 `~/.local/share/emobot-companion/settings.json`；POSIX 权限为 600，目录 700。文件不是加密保险库。Windows 的保护取决于用户目录 ACL。`.env.example` 是变量说明，程序读取进程环境变量，**不自动读取 .env 文件**。
 
+布尔环境变量接受 `1/true/yes/on` 或 `0/false/no/off`，忽略大小写及两端空格；拼写错误会明确报错，避免无意更改记忆、历史或语音开关。配置始终按 UTF-8 保存和读取。
+
 ## 会话、记忆与文档
 
 新会话清空本次模型上下文，既有长期记忆保持。历史默认落盘，开关 `save_history` 可以关闭落盘；当前会话仍保留最近 10 轮用于上下文。`memory_enabled` 独立控制自动写入和检索个人记忆，不妨碍文档问答。

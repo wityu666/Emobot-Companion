@@ -77,6 +77,8 @@ pio device monitor -b 115200
 
 Four sequential review/fix rounds are recorded in [review 1](docs/REVIEW-1.md), [review 2](docs/REVIEW-2.md), [review 3](docs/REVIEW-3.md) and [review 4](docs/REVIEW-4.md). [Validation](docs/VALIDATION.md) distinguishes automated checks from hardware/cloud checks still requiring your equipment. [Feature mapping](docs/FEATURE-MAP.md) traces the existing features to their new implementation. [Interview notes](docs/PORTFOLIO.md) explain design decisions without inventing individual authorship.
 
+Version **1.2.0** adds three optimization rounds: [archive batching and retrieval](docs/OPTIMIZATION-1.md), [transport lifecycle and desktop scheduling](docs/OPTIMIZATION-2.md), and [configuration/provider reliability and delivery](docs/OPTIMIZATION-3.md). The synthetic archive benchmark is reproducible; its measured speedups describe that local workload. All rounds are sequential assistant self-review and validation.
+
 ```bash
 python -m pip install -e '.[dev]'
 pytest -q

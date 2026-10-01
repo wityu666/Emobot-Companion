@@ -23,13 +23,25 @@
     "esptool": "5.4.0"
   },
   "test_result": {
-    "non_gui": ".............................................................s.......... [ 91%]\n.......                                                                  [100%]\n78 passed, 1 skipped in 2.90s",
+    "non_gui": "........................................................................ [ 68%]\n...............s.................                                        [100%]\n104 passed, 1 skipped in 2.08s",
     "gui_separate_processes": [
-      ".                                                                        [100%]\n1 passed in 0.60s",
-      ".                                                                        [100%]\n1 passed in 0.31s",
-      ".                                                                        [100%]\n1 passed in 0.41s"
+      {
+        "case": "test_desktop_build_and_worker_delivery",
+        "exit_code": 0,
+        "output": ".                                                                        [100%]\n1 passed in 0.48s\n"
+      },
+      {
+        "case": "test_desktop_cleanup_finishes_after_robot_disconnect_failure",
+        "exit_code": 0,
+        "output": ".                                                                        [100%]\n1 passed in 0.26s\n"
+      },
+      {
+        "case": "test_text_appears_before_speech_finishes_and_config_path_is_honored",
+        "exit_code": 0,
+        "output": ".                                                                        [100%]\n1 passed in 0.38s\n"
+      }
     ],
-    "combined_passes": 81,
+    "combined_passes": 107,
     "skips": 1
   },
   "test_skip": "Live PostgreSQL is not present locally; configured remote service job covers it.",
@@ -40,12 +52,12 @@
     "static_ram_limit_bytes": 327680,
     "flash_bytes": 2147945,
     "app_partition_bytes": 3145728,
-    "sha256": "24672de03db30b85790be861ea275adae43efc4439a028cc7edc37f4aa8ff1ab"
+    "sha256": "8c3f657c22b1471e3fa71ab6f66c9a88f1388ecf812227d48468f7645de2eb31"
   },
   "ffat": {
     "build": "success",
     "bytes": 5173248,
-    "sha256": "c33c140751db33d7d18fa28a50602722a48e1d8f0585b220094f9dfd1fa026ce"
+    "sha256": "214d14db7845c568bac2ebba33b7f461064ceb58940b5f3f61c296ca8d09a490"
   },
   "artwork": {
     "source_sha256": "fb3ed45fce60228a283f2c8716b0f8524c592f6a06182cbfce96fbad20bec7cd",
@@ -63,8 +75,7 @@
     "physical ESP32-S3 board",
     "real servos/OLED/gesture sensor",
     "actual microphone and speaker",
-    "live chat/ASR/TTS/embedding accounts",
-    "this review remote CI before push"
+    "live chat/ASR/TTS/embedding accounts"
   ],
   "round_1_before": "...F...............................................                      [100%]\n=================================== FAILURES ===================================\n____________________ test_forget_removes_source_and_answer _____________________\n\narchive = <emobot.archive.Archive object at 0x10c244530>\n\n    def test_forget_removes_source_and_answer(archive):\n        session = archive.start_session()\n        source = archive.save_turn(session, \"I like cats\", \"You like cats; remembered\")\n        memory = archive.remember(\"I like cats\", source=source)\n        archive.forget(memory)\n>       assert archive.history(session) == []\nE       AssertionError: assert [{'role': 'as... remembered'}] == []\nE         \nE         Left contains one more item: {'role': 'assistant', 'content': 'You like cats; remembered'}\nE         Use -v to get more diff\n\noutputs/Emobot-Companion/tests/test_archive.py:57: AssertionError\n=========================== short test summary info ============================\nFAILED outputs/Emobot-Companion/tests/test_archive.py::test_forget_removes_source_and_answer\n1 failed, 50 passed in 0.30s",
   "round_1_after": "...................................................                      [100%]\n51 passed in 0.28s",
@@ -79,9 +90,49 @@
     "ci_commit": "5674abc8c6e32784268c72e69ddf5c9de98ca603",
     "ci_conclusion": "success"
   },
-  "package_version": "1.1.0",
+  "package_version": "1.2.0",
   "requires_python": ">=3.13,<3.14",
   "round_4_before": "7 provider/memory/transport regressions failed; native Python 3.13 GUI shutdown regression failed separately.",
   "round_4_after": "All eight reproduced regressions passed; local coverage 81 passes, 1 skipped across non-GUI and isolated native-GUI runs.",
-  "round_4_native_environment_note": "Combined macOS multiple-Tk-root run stalled and was aborted for diagnostics; all three native cases passed in separate Python 3.13 processes."
+  "round_4_native_environment_note": "Combined macOS multiple-Tk-root run stalled and was aborted for diagnostics; all three native cases passed in separate Python 3.13 processes.",
+  "historical_round_4": {
+    "test_result": {
+      "non_gui": ".............................................................s.......... [ 91%]\n.......                                                                  [100%]\n78 passed, 1 skipped in 2.90s",
+      "gui_separate_processes": [
+        ".                                                                        [100%]\n1 passed in 0.60s",
+        ".                                                                        [100%]\n1 passed in 0.31s",
+        ".                                                                        [100%]\n1 passed in 0.41s"
+      ],
+      "combined_passes": 81,
+      "skips": 1
+    },
+    "firmware": {
+      "environment": "emobot-s3",
+      "build": "success",
+      "static_ram_bytes": 67996,
+      "static_ram_limit_bytes": 327680,
+      "flash_bytes": 2147945,
+      "app_partition_bytes": 3145728,
+      "sha256": "8c3f657c22b1471e3fa71ab6f66c9a88f1388ecf812227d48468f7645de2eb31"
+    },
+    "ffat": {
+      "build": "success",
+      "bytes": 5173248,
+      "sha256": "214d14db7845c568bac2ebba33b7f461064ceb58940b5f3f61c296ca8d09a490"
+    },
+    "package_version": "1.1.0"
+  },
+  "optimization_rounds": 3,
+  "optimizations": {
+    "round_1": "6 additional archive checks pass; synthetic baseline comparison in optimization-benchmark.json",
+    "round_2": "5 before failures corrected, 7 runtime checks pass",
+    "round_3": "12 before failures corrected, all 13 configuration/provider checks pass"
+  },
+  "ci_evidence": "Exact published revision verified in the external delivery manifest and GitHub Actions; separate from local checks.",
+  "distribution": {
+    "version": "1.2.0",
+    "requires_python": "<3.14,>=3.13",
+    "source_resource_files_verified": 12,
+    "installed_demo": "passed"
+  }
 }

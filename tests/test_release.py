@@ -27,15 +27,20 @@ def test_query_vector_and_stored_pgvector_array(settings, archive):
 @pytest.mark.skipif(
     not os.environ.get("EMOBOT_TEST_POSTGRES"), reason="Requires isolated PostgreSQL/pgvector service"
 )
-def test_postgres_vector_crud_and_user_scope(settings):
+def test_postgres_vector_crud_and_user_scope(settings, tmp_path):
     from dataclasses import replace
     from uuid import uuid4
 
-    from sqlalchemy import delete
+    from sqlalchemy import delete, select
+
+    from emobot.protocol import Action
 
     database = Archive(replace(settings, user="test-" + uuid4().hex), os.environ["EMOBOT_TEST_POSTGRES"])
+    friend = Archive(replace(settings, user="friend-" + uuid4().hex), os.environ["EMOBOT_TEST_POSTGRES"])
     try:
         identity = database.remember("I like cats")
+        friend_identity = friend.remember("I like cats")
+        assert all(row["id"] != friend_identity for row in database.search("cats"))
 
         class Embedder:
             def embed(self, _text):
@@ -45,11 +50,49 @@ def test_postgres_vector_crud_and_user_scope(settings):
         assert database.search("cats", [1.0, 0.0, 0.0])[0]["id"] == identity
         database.edit_memory(identity, "I like dogs")
         assert database.list_memories()[0]["vector"] is None
+        document = tmp_path / "robot.md"
+        document.write_text("robot manual " * 200)
+        assert database.import_markdown([document]) == 1
+        assert database.import_markdown([document]) == 0
+        assert database.index(Embedder()) == 4  # Edited memory and three new chunks.
+        results = database.search("robot", [1, 0, 0], include_memories=False)
+        assert len(results) == 3 and all(row["source"] == "knowledge_chunks" for row in results)
+        assert database.search("robot", include_memories=False)
+        document.write_text("replaced guide")
+        assert database.import_markdown([document]) == 1
+        assert not database.search("robot", include_memories=False)
+        session = database.start_session()
+        database.save_turn(session, "hello", "reply")
+        assert database.history(session)[-1]["content"] == "reply"
+        database.record_actions(session, [Action("head_nod"), Action("eye_happy")], "sent")
+        with database.engine.connect() as connection:
+            assert (
+                len(
+                    connection.execute(
+                        select(database.actions).where(database.actions.c.user_id == database.user)
+                    ).all()
+                )
+                == 2
+            )
         database.forget()
         assert not database.list_memories()
+        assert friend.list_memories()[0]["id"] == friend_identity
     finally:
         with database.engine.begin() as connection:
-            connection.execute(delete(database.users).where(database.users.c.id == database.user))
+            for table in (
+                database.memories,
+                database.chunks,
+                database.documents,
+                database.messages,
+                database.sessions,
+                database.actions,
+                database.skills,
+            ):
+                connection.execute(delete(table).where(table.c.user_id.in_([database.user, friend.user])))
+            connection.execute(
+                delete(database.users).where(database.users.c.id.in_([database.user, friend.user]))
+            )
+        friend.close()
         database.close()
 
 

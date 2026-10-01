@@ -11,9 +11,9 @@
   ],
   "metrics": {
     "literal_normalized_5gram": {
-      "new_unique_ngrams": 14629,
-      "new_ngrams_also_in_old_percent": 6.73,
-      "corpus_jaccard_percent": 2.71,
+      "new_unique_ngrams": 15094,
+      "new_ngrams_also_in_old_percent": 6.57,
+      "corpus_jaccard_percent": 2.69,
       "strongest_pairs": [
         {
           "new": "src/emobot/speech.py",
@@ -33,24 +33,24 @@
         {
           "new": "src/emobot/gui.py",
           "closest_old": "pc_client/pc_client_v3.0.0/main.py",
-          "jaccard_percent": 2.23
+          "jaccard_percent": 2.22
         },
         {
           "new": "src/emobot/link.py",
           "closest_old": "pc_client/pc_client_v3.0.0/connect.py",
-          "jaccard_percent": 2.22
+          "jaccard_percent": 1.84
         }
       ]
     },
     "identifier_normalized_8gram": {
-      "new_unique_ngrams": 11484,
-      "new_ngrams_also_in_old_percent": 22.07,
-      "corpus_jaccard_percent": 11.23,
+      "new_unique_ngrams": 11827,
+      "new_ngrams_also_in_old_percent": 21.89,
+      "corpus_jaccard_percent": 11.33,
       "strongest_pairs": [
         {
           "new": "src/emobot/gui.py",
           "closest_old": "pc_client/pc_client_v3.0.0/main.py",
-          "jaccard_percent": 14.62
+          "jaccard_percent": 14.74
         },
         {
           "new": "firmware/EmobotS3/main.cpp",
@@ -70,7 +70,7 @@
         {
           "new": "src/emobot/link.py",
           "closest_old": "pc_client/pc_client_v3.0.0/main.py",
-          "jaccard_percent": 5.7
+          "jaccard_percent": 6.61
         }
       ]
     }

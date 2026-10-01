@@ -81,7 +81,7 @@ class Settings:
     @classmethod
     def load(cls, path: Path | None = None) -> Settings:
         target = path or state_directory() / "settings.json"
-        data = json.loads(target.read_text()) if target.exists() else {}
+        data = json.loads(target.read_text(encoding="utf-8")) if target.exists() else {}
         if not isinstance(data, dict):
             raise ValueError("Configuration must be a JSON object")
         known = {f.name for f in fields(cls)}
@@ -90,7 +90,10 @@ class Settings:
             value = os.environ.get("EMOBOT_" + name.upper())
             if value is not None:
                 if name in {"memory_enabled", "save_history", "voice_enabled"}:
-                    value = value.lower() in {"1", "true", "yes"}
+                    normalized = value.strip().lower()
+                    if normalized not in {"1", "true", "yes", "on", "0", "false", "no", "off"}:
+                        raise ValueError(f"Invalid boolean environment variable: EMOBOT_{name.upper()}")
+                    value = normalized in {"1", "true", "yes", "on"}
                 elif name == "embedding_dimensions":
                     value = int(value)
                 data[name] = value
@@ -103,7 +106,7 @@ class Settings:
         temporary = None
         try:
             with tempfile.NamedTemporaryFile(
-                mode="w", dir=target.parent, prefix=".emobot-", delete=False
+                mode="w", encoding="utf-8", dir=target.parent, prefix=".emobot-", delete=False
             ) as stream:
                 temporary = Path(stream.name)
                 json.dump(asdict(self), stream, ensure_ascii=False, indent=2)
