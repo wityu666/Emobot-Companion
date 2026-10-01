@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import hashlib
+import heapq
 import math
 import re
 import uuid
@@ -180,9 +181,10 @@ class Archive:
     def save_turn(self, session: str, question: str, answer: str) -> str:
         source = uid()
         with self.engine.begin() as connection:
-            for identity, role, content in ((source, "user", question), (uid(), "assistant", answer)):
-                connection.execute(
-                    insert(self.messages).values(
+            connection.execute(
+                insert(self.messages),
+                [
+                    dict(
                         id=identity,
                         user_id=self.user,
                         session_id=session,
@@ -191,7 +193,9 @@ class Archive:
                         content=content,
                         created=now(),
                     )
-                )
+                    for identity, role, content in ((source, "user", question), (uid(), "assistant", answer))
+                ],
+            )
         return source
 
     def list_memories(self) -> list[dict]:
@@ -303,16 +307,20 @@ class Archive:
                         id=identity, user_id=self.user, source=source, digest=digest, created=now()
                     )
                 )
-                for index, (title, part) in enumerate(chunks):
+                if chunks:
                     connection.execute(
-                        insert(self.chunks).values(
-                            id=uid(),
-                            user_id=self.user,
-                            document_id=identity,
-                            heading=title,
-                            content=part,
-                            position=index,
-                        )
+                        insert(self.chunks),
+                        [
+                            dict(
+                                id=uid(),
+                                user_id=self.user,
+                                document_id=identity,
+                                heading=title,
+                                content=part,
+                                position=index,
+                            )
+                            for index, (title, part) in enumerate(chunks)
+                        ],
                     )
             imported += 1
         return imported
@@ -335,71 +343,90 @@ class Archive:
                 if len(vector) != self.dimensions or any(not math.isfinite(v) for v in vector):
                     raise ValueError("Embedding dimensions/values do not match database schema")
                 with self.engine.begin() as connection:
-                    connection.execute(
+                    changed = connection.execute(
                         update(table)
                         .where(
                             table.c.id == row["id"],
                             table.c.content == row["content"],
                             table.c.user_id == self.user,
+                            table.c.vector.is_(None),
                         )
                         .values(vector=vector)
                     )
-                count += 1
+                count += changed.rowcount
         return count
 
     def search(
         self, query: str, vector: list[float] | None = None, limit: int = 6, include_memories: bool = True
     ) -> list[dict]:
-        query_terms, matches = terms(query), []
+        if limit <= 0:
+            return []
+        query_terms = terms(query)
+        use_vector = bool(vector)
         tables = (self.memories, self.chunks) if include_memories else (self.chunks,)
         with self.engine.connect() as connection:
-            for table in tables:
-                rows = connection.execute(select(table).where(table.c.user_id == self.user)).mappings()
-                for row in rows:
-                    words = terms(row["content"])
-                    keyword = len(query_terms & words) / max(1, len(query_terms))
-                    stored_vector = row["vector"]
-                    similarity = (
-                        max(0.0, cosine(vector, stored_vector))
-                        if vector is not None and stored_vector is not None
-                        else 0
-                    )
-                    score = keyword if not vector else 0.3 * keyword + 0.7 * similarity
-                    if score > 0:
-                        matches.append(
-                            {"content": row["content"], "source": table.name, "id": row["id"], "score": score}
+
+            def candidates():
+                matched = False
+                for table in tables:
+                    columns = [table.c.id, table.c.content]
+                    if use_vector:
+                        columns.append(table.c.vector)
+                    rows = connection.execute(
+                        select(*columns).where(table.c.user_id == self.user).execution_options(yield_per=100)
+                    ).mappings()
+                    for row in rows:
+                        words = terms(row["content"])
+                        keyword = len(query_terms & words) / max(1, len(query_terms))
+                        stored_vector = row.get("vector")
+                        similarity = (
+                            max(0.0, cosine(vector, stored_vector))
+                            if use_vector and stored_vector is not None
+                            else 0
                         )
-            if (
-                include_memories
-                and not matches
-                and re.search(r"记得我|我的爱好|我的偏好|remember.*me|about me|my preferences", query, re.I)
-            ):
-                recent = connection.execute(
-                    select(self.memories)
-                    .where(self.memories.c.user_id == self.user)
-                    .order_by(self.memories.c.created.desc())
-                    .limit(4)
-                ).mappings()
-                matches.extend(
-                    {"content": row["content"], "source": "memories", "id": row["id"], "score": 0.1}
-                    for row in recent
-                )
-        return sorted(matches, key=lambda m: m["score"], reverse=True)[:limit]
+                        score = 0.3 * keyword + 0.7 * similarity if use_vector else keyword
+                        if score > 0:
+                            matched = True
+                            yield {
+                                "content": row["content"],
+                                "source": table.name,
+                                "id": row["id"],
+                                "score": score,
+                            }
+                if (
+                    include_memories
+                    and not matched
+                    and re.search(
+                        r"记得我|我的爱好|我的偏好|remember.*me|about me|my preferences", query, re.I
+                    )
+                ):
+                    recent = connection.execute(
+                        select(self.memories.c.id, self.memories.c.content)
+                        .where(self.memories.c.user_id == self.user)
+                        .order_by(self.memories.c.created.desc())
+                        .limit(4)
+                    ).mappings()
+                    for row in recent:
+                        yield {"content": row["content"], "source": "memories", "id": row["id"], "score": 0.1}
+
+            return heapq.nlargest(limit, candidates(), key=lambda item: item["score"])
 
     def record_actions(self, session: str, actions, status: str) -> None:
-        with self.engine.begin() as connection:
-            for action in actions:
-                connection.execute(
-                    insert(self.actions).values(
-                        id=uid(),
-                        user_id=self.user,
-                        session_id=session,
-                        name=action.name,
-                        duration=action.duration,
-                        status=status,
-                        created=now(),
-                    )
-                )
+        rows = [
+            dict(
+                id=uid(),
+                user_id=self.user,
+                session_id=session,
+                name=action.name,
+                duration=action.duration,
+                status=status,
+                created=now(),
+            )
+            for action in actions
+        ]
+        if rows:
+            with self.engine.begin() as connection:
+                connection.execute(insert(self.actions), rows)
 
     def record_skill(self, session: str, kind: str, status: str) -> None:
         with self.engine.begin() as connection:

@@ -1,0 +1,100 @@
+{
+  "python": "3.13.5",
+  "platform": "macOS-26.5-arm64-arm-64bit-Mach-O",
+  "current": {
+    "import_median_seconds": 0.011983915999735473,
+    "import_insert_calls": [
+      2,
+      2,
+      2
+    ],
+    "keyword_search_median_seconds": 0.005187375001696637,
+    "keyword_search_traced_peak_bytes": 35831,
+    "top_results": [
+      {
+        "content": "robot archive item 0",
+        "source": "knowledge_chunks",
+        "id": "0",
+        "score": 1.0
+      },
+      {
+        "content": "robot archive item 1",
+        "source": "knowledge_chunks",
+        "id": "1",
+        "score": 1.0
+      },
+      {
+        "content": "robot archive item 2",
+        "source": "knowledge_chunks",
+        "id": "2",
+        "score": 1.0
+      },
+      {
+        "content": "robot archive item 3",
+        "source": "knowledge_chunks",
+        "id": "3",
+        "score": 1.0
+      },
+      {
+        "content": "robot archive item 4",
+        "source": "knowledge_chunks",
+        "id": "4",
+        "score": 1.0
+      },
+      {
+        "content": "robot archive item 5",
+        "source": "knowledge_chunks",
+        "id": "5",
+        "score": 1.0
+      }
+    ]
+  },
+  "baseline": {
+    "import_median_seconds": 0.04726491599649307,
+    "import_insert_calls": [
+      1001,
+      1001,
+      1001
+    ],
+    "keyword_search_median_seconds": 0.05857670800105552,
+    "keyword_search_traced_peak_bytes": 704746,
+    "top_results": [
+      {
+        "content": "robot archive item 0",
+        "source": "knowledge_chunks",
+        "id": "0",
+        "score": 1.0
+      },
+      {
+        "content": "robot archive item 1",
+        "source": "knowledge_chunks",
+        "id": "1",
+        "score": 1.0
+      },
+      {
+        "content": "robot archive item 2",
+        "source": "knowledge_chunks",
+        "id": "2",
+        "score": 1.0
+      },
+      {
+        "content": "robot archive item 3",
+        "source": "knowledge_chunks",
+        "id": "3",
+        "score": 1.0
+      },
+      {
+        "content": "robot archive item 4",
+        "source": "knowledge_chunks",
+        "id": "4",
+        "score": 1.0
+      },
+      {
+        "content": "robot archive item 5",
+        "source": "knowledge_chunks",
+        "id": "5",
+        "score": 1.0
+      }
+    ]
+  }
+}
